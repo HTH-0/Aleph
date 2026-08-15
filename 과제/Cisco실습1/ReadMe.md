@@ -1,5 +1,8 @@
+---
+
 # [실습 01] Cisco 실습
 ### VLAN · DHCP · EIGRP 상호 재분배 네트워크 구성 개요
+
 ---
 
 ### 1. 기본 네트워크 설계 및 사전 계획
@@ -154,4 +157,4 @@ Router(config-router)# no auto-summary
 
 
   * **End-to-End 검증**
-  * 왼쪽 VLAN PC(`192.168.200.10`) ➡️ 오른쪽 DHCP PC(`10.10.10.2`) Ping 및 `tracert 10.10.10.2` 실행으로 홉 경로 일치 여부 확인
+  * 왼쪽 VLAN PC(`192.168.200.10`) -> 오른쪽 DHCP PC(`10.10.10.2`) Ping 및 `tracert 10.10.10.2` 실행으로 홉 경로 일치 여부 확인
