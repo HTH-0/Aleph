@@ -6,5 +6,5 @@
 
 | 구분 | 주제 | 핵심 키워드 | 링크 |
 | :--- | :--- | :--- | :--- |
-| **이론** | 네트워크 기초 | IT 인프라, CIA 3요소, OSI 7계층, TCP/UDP, IPv4 클래스, 서브넷 | [문서 이동](./Theory/README.md) |
-| **실습** | 시스코 기본 설정 | 케이블 규격, CLI 모드 구조, Line 보안, Default Gateway, `wr` | [문서 이동](./Cisco/README.md) |
+| **이론** | 네트워크 기초 | IT 인프라, CIA 3요소, OSI 7계층, TCP/UDP, IPv4 클래스, 서브넷 | [문서 이동](./Theory) |
+| **실습** | 시스코 기본 설정 | 케이블 규격, CLI 모드 구조, Line 보안, Default Gateway, `wr` | [문서 이동](./Cisco) |
