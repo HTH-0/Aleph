@@ -1,5 +1,5 @@
-## 실습 1. VLAN·DHCP·EIGRP 통합 네트워크 구성 개요
-
+# [실습 01] Cisco 실습
+### VLAN · DHCP · EIGRP 상호 재분배 네트워크 구성 개요
 ---
 
 ### 1. 기본 네트워크 설계 및 사전 계획
@@ -145,13 +145,13 @@ Router(config-router)# no auto-summary
 ### 5. 트러블슈팅 및 검증 체크포인트
 
 * **스위치 포트 점검**
-* `show vlan brief`: Access 포트가 지정된 VLAN 번호에 정상 매핑되어 있는지 확인
-* `show interfaces trunk`: 스위치 간 연결선 및 라우터 업링크 포트(`Fa0/5` 등)가 Trunk 목록에 누락되지 않았는지 확인
+  * `show vlan brief`: Access 포트가 지정된 VLAN 번호에 정상 매핑되어 있는지 확인
+  * `show interfaces trunk`: 스위치 간 연결선 및 라우터 업링크 포트(`Fa0/5` 등)가 Trunk 목록에 누락되지 않았는지 확인
 
 
-* **라우팅 및 재분배 점검**
-* `show ip route`: EIGRP 내부 경로(`D`)와 재분배된 외부 경로(`D EX`)가 라우팅 테이블에 모두 올라와 있는지 확인
+  * **라우팅 및 재분배 점검**
+  * `show ip route`: EIGRP 내부 경로(`D`)와 재분배된 외부 경로(`D EX`)가 라우팅 테이블에 모두 올라와 있는지 확인
 
 
-* **End-to-End 검증**
-* 왼쪽 VLAN PC(`192.168.200.10`) ➡️ 오른쪽 DHCP PC(`10.10.10.2`) Ping 및 `tracert 10.10.10.2` 실행으로 홉 경로 일치 여부 확인
+  * **End-to-End 검증**
+  * 왼쪽 VLAN PC(`192.168.200.10`) ➡️ 오른쪽 DHCP PC(`10.10.10.2`) Ping 및 `tracert 10.10.10.2` 실행으로 홉 경로 일치 여부 확인
