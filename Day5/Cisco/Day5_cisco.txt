@@ -1,0 +1,215 @@
+OSPF Area 0 (Backbone area)
+재분배 하지 않아도 자동으로 area 간의 라우팅이 이루어짐
+
+두 개 이상의 area로 이루어진 네트워크 : multi area
+
+하나의 area 안에 이루어진 네트워크 : single area >> 반드시 area number (backbone) = 0
+
+backbone과 반드시 물리적으로 연결 되어야 한다.
+	>> 안되어있다면? : 직접 물리적으로 연결하기 , 논리적으로 연결 ( Virtual Link )
+
+
+router ospf [Process ID] << 라우터 로컬 식별자 (이웃 간 ID가 달라도 통신 가능)
+network 192.168.200.0[네트워크 주소] 0.0.0.240[wildcard] area 0[area번호]
+
+OSPF 는 no auto-summary 필요 x
+
+경계 대역  > area 번호을 맞춰준다
+
+> 연결되는 부분에 해당하는 network의 area번호를 동일하게 맞춘다
+
+show ip protocol 에서 router ID 
+
+router ID 우선순위
+1. 관리자가 직접 지정
+2. 논리적인 인터페이스에 할당된 IP 주소 중 가장 높은 주소
+3. 활성화된 물리적 인터페이스에 할당된 IP 주소 중 가장 높은 주소
+
+논리적 인터페이스 지정
+interface loopback 0[임의의 번호]
+ip address [] []
+
+ip protocol 갱신
+clear ip ospf process >> 갱신 >> 안됨
+저장 ( wm / copy ~ )  이후에 reload
+
+sh ip ospf neighbor
+ state : FULL
+
+sh ip ospf database
+ADV Router : 광고하는 라우터
+
+sh ip ospf in
+process id, router id 확인가능
+> 네트워크 타입 ptp
+cost : 64
+
+확장형 핑 사용해야함 << 출발지 IP(Loopback 등)를 직접 지정하여 돌아오는 경로(Return Route) 테스트
+ping
+target IP address : []
+entended commands : y
+source >> 5.5.5.5(루프백)
+
+라우팅 프로토콜이 다를 때 eigrp ospf
+ospf에서 경계대역으로 재분배 하려고 한다면
+eigrp 에서 광고
+eigrp에서 재분배 > ospf 광고
+
+router eigrp 100
+redistribute ospf [process ID] metric [bandwidth값] [delay값]<< 단위가 달라서 10을 나눈다 255[reliability] 1[부하값] 1500[MTU 값]
+
+router ospf 1
+redistribute eigrp 100 subnets 
+
+
+ACL  Access Control List - 접근 제어 목록
+: , 네트워크의 '보안, 서비스 분류, 통신 정책(WHO, WHERE, WHAT)'을 라우터 입구/출구에서 제어하기 위해 사용
+
+- 필터링 기준 (Standard / Extended)
+Standard: 출발지 IP만 / Extended: 출발지+목적지+프로토콜+포트
+
+----------------------
+standard
+
+일반적으로 목적지와 가장 가까운 router에 적용
+>> 출발지 근처에서 차단하면, 가야 할 다른 정상적인 경로까지 통째로 막히기 때문에
+첫줄 부터 점검 << 줄의 순서가 중요!!
+ip 범위가 좁은것 > 위쪽
+맨 마지막에 deny any (deny ip any any) 생략
+
+access-list 10[임의의 숫자] deny 172.16.100.3 0.0.0.0(자기자신을 나타내는 와일드카드)
+
+interface gi0/0 이동 후
+ip access-group [AL 이름] in/outbound(대체로 outbound)
+	> inbound 들어올때 검사, outbound 나갈 때 패킷검사
+
+access-list 10 permit any << 기본값이 deny any 로 되어있기 때문에 따로 설정 해줘야함
+
+ACL 정책 확인
+show ip access-list  / show access-list
+
+named ACL <-> ? ACL
+ip access-list standard [AL 이름]
+
+----------------------------------------------
+
+extended
+
+출발지와 가장 가까운 라우터 사용
+>> 어차피 버릴 패킷이라면, 네트워크 대역폭을 낭비하기 전에 입구에서 즉시 차단하기 위해
+
+ex)조건
+172.16.100.3 -> Web S : Web 접속 가능, Ping 불가능
+172.16.100.4 -> 10.10.10.3 Ping 불가능
+그 외 모든 트래픽은 허용
+
+config 모드에서
+access-list 100 (100~199까지 extended) icmp(통신 상태를 점검하고 오류를 알리기 위해) host 172.16.100.3 host 10.10.10.2 echo(Ping 요청(Echo Request)' 패킷만)
+== access-list 100 (100~199까지 extended) icmp 172.16.100.3 0.0.0.255 10.10.10.2 0.0.0.255
+
+access-list 100 (100~199까지 extended) icmp host 172.16.100.3 host 10.10.10.2 echo-reply(응답)
+
+access-list 100 permit ip any any
+
+해당 목적지 방향 인터페이스로 가서
+ip access-group 100 out
+
+>>>해당 목적지의 ping만 불가능하게 막는 작업
+
+--------------------------------------------------
+
+ex) 조건
+192.168.200.0/24 -> 10.10.10.2(W.S) : Web 접속 불가능, Ping 가능
+192.168.200.35 -> 10.10.10.2 (W.S) : Web 접속 가능
+그 외 모든 트래픽은 허용
+
+>> 첫줄부터 하면 두번째 줄에 영향이 가므로 두번째 줄 부터 설정한다.
+
+named 방식 사용
+ip access-list extended test(이름)
+
+permit tcp host 192.168.200.35 host 10.10.10.2 eq www(http, 80 다 같은거)
+>> 192.168.200.35 PC가 10.10.10.2 웹 서버로 접속하는 HTTP(80번 포트) 웹 트래픽을 허용한다
+
+deny tcp 192.168.200.0 0.0.0.255 host 10.10.10.2 eq 80
+>> 192.168.200.0/24 대역에 속한 모든 PC가 10.10.10.2 웹 서버로 접속하는 HTTP(80번 포트) 웹 트래픽을 차단
+
+[
+eq (Equal): 지정한 포트 번호와 일치하는 패킷
+neq (Not Equal): 지정한 포트 번호가 아닌 패킷
+gt (Greater Than): 지정한 포트 번호보다 큰(초과) 패킷
+lt (Lower / Less Than): 지정한 포트 번호보다 작은(미만) 패킷
+range: 지정한 두 포트 번호 사이 범위에 속하는 패킷
+established: 이미 세션이 연결된 TCP 응답 패킷 (ACK 또는 RST 플래그가 설정된 외부 반환 트래픽만 허용할 때 사용)
+]
+
+in gi 0/0
+ip access-group 100 out >> 기존에 있던거 없앤거
+
+ip access-group test out
+
+do sh access-list
+do sh ip access-list
+
+------------------------------------------------------------
+
+ex) 조건
+10.10.10.0/24 -> 192.168.200.34 (FTP S) FTP 접속 불가능, Ping 가능
+10.10.10.3 0 -> 200.34 FTP 접속 가능
+172.16.100.3 -> 200.34(WEB S) WEB 접속 불가능
+그 외 모든 트래픽 허용
+
+Extended IP access list pra
+    10 permit tcp host 10.10.10.3 host 192.168.200.34 eq ftp
+    20 deny tcp 10.10.10.0 0.0.0.255 host 192.168.200.34 eq ftp
+    30 deny tcp host 172.16.100.3 host 192.168.200.34 eq www
+    40 permit ip any any
+
+
+-----------------------------------------
+
+NAT(Network Address Translation - 네트워크 주소 변환)
+>> 일반적으로 사설 ip 를 공인 ip로 가는 경우를 생각
+>>> 1 : 1 관계
+
+PAT(Port Addresss Translation - 포트 주소 변환)
+>>> 다 : 1 관계
+
+Static / Dynamic
+
+
+사설 ip 인데 nat 설정이 없어도 동작한 이유
+>> 시뮬레이터 프로그램이라 가능하게 설정됨
+
+--------------------------
+
+조건
+1.1.1.0
+2.2.2.0 > 공인 ip
+192. ~ , 172. ~ 10. ~ 사설 ip
+
+ip nat pool [풀 이름] [시작 ip 범위] [끝 ip 범위] netmask 255.255.255.0
+>>> 시작 ip(공인 ip)
+access-list 10 permit 172.16.100.0 0.0.0.255
+
+ip nat inside source list 10 pool [풀 이름]
+>> : 내부(inside)에서 나가는 패킷의 출발지 IP(source)를 검사해서, list 조건(ACL)에 맞는 PC들이면 pool에 준비해 둔 공인 IP 중 하나로 주소를 바꿔서 외부로 내보내라
+>>> list : access list 약자
+
+in gi0/0
+ip nat inside
+
+in se0/3/0
+ip nat outside
+
+>> 확인하는 법 show ip nat 
+
+static 으로 하고싶다면??
+ip nat inside source static 172.16.100.4 1.1.1.10
+
+--------------------------------------------
+
+VPN(Virtual Private Network) - 가상 사설망
+-Site-to-Site / Remote-Accesss
+
+
