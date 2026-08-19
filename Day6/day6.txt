@@ -1,0 +1,264 @@
+2811 router
+wic-2t
+
+Tunnel Interface 생성 / Tunnel Mode  지정 / Tunnel 출발지/목적지 지정 / Tunnel IP 설정
+
+경로추적 >traceroute
+tracert [추적할 ip]
+
+
+--------------------------------
+왼쪽 라우터(본사)
+
+interface tunnel 100[임의의 번호]
+
+ip address 10.10.0.1 255.255.255.0
+
+tunnel mode gre ip
+>> 터널의 동작 방식(캡슐화 방식)을 GRE over IPv4로 지정
+>>tunnel mode gre / ipv6ip
+	GRE: 이것저것 다 들어가는 만능 택배 상자 (가장 많이 씀, OSPF 등 라우팅도 가능)
+	ipv6ip: 오직 IPv6 패킷만 쏙 넣어서 전달하는 전용 봉투 (헤더가 살짝 가벼움)
+
+tunnel source serial 0/3/0
+>> 출발지(Source) 물리 인터페이스를 지정
+
+tunnel destination 2.2.2.2
+>> 목적지(Destination) 공인 IP 주소
+
+ip route 172.16.0.0 255.255.255.0 10.10.10.2
+>>원격지 사설망(172.16.0.0/24)으로 가는 트래픽을 VPN 터널 입구(상대방 터널 IP: 10.10.10.2)로 밀어 넣어주는 정적 라우팅 설정
+
+
+-------------------------------------------------------
+오른쪽 라우터 (지사)
+
+interface tunnel 100
+가상의 터널 인터페이스(Tunnel 100)를 생성하고 해당 설정 모드로 진입
+
+ip address 10.10.10.2 255.255.255.0
+가상 터널 내부에서 사용할 내 라우터의 IP 주소를 부여
+
+tunnel mode gre ip
+터널의 동작 방식(캡슐화 방식)을 GRE over IPv4로 지정
+
+tunnel source serial 0/3/1
+터널 패킷이 실제로 나갈 내 라우터의 물리 포트(출발지)를 지정
+
+tunnel destination 1.1.1.1
+터널이 연결될 반대편 라우터의 실제 공인 IP 주소(목적지)를 지정
+
+ip route 192.168.100.0 255.255.255.0 10.10.10.1
+원격지 사설망(192.168.100.0/24)으로 가는 트래픽을 VPN 터널 입구(상대방 터널 IP: 10.10.10.1)로 밀어 넣어주는 정적 라우팅 설정
+
+----------------------------------
+
+
+Access-List 설정 / Crypto 정책 설정 / Crypto map 설정 / Interface에 Map 적용
+
+access-list 100 permit gre host 1.1.1.1 host 2.2.2.2
+
+access-list 100 permit gre 192.168.100.0 0.0.0.255 host 2.2.2.2
+
+crypto isakmp policy 10
+ISAKMP 정책 우선순위 10번을 생성하고 해당 설정 모드로 진입
+
+authentication pre-share
+라우터 상호 인증 방식을 사전 공유키(Pre-Shared Key, 비밀번호) 방식으로 지정
+
+encryption 3des
+데이터 암호화 알고리즘으로 3DES(Triple DES)를 사용
+
+hash md5
+해시 알고리즘으로 MD5를 사용
+
+crypto isakmp key 1234 address 2.2.2.2
+IP 주소가 2.2.2.2인 상대방 라우터와 인증할 비밀번호(Pre-Shared Key)를 1234로 지정
+
+crypto ipsec transform-set test esp-3des esp-md5-hmac
+test라는 이름의 IPsec 암호화 세트(Transform-Set)를 만들고, 암호화 방식으로 esp-3des, 무결성 검증 방식으로 esp-md5-hmac을 지정
+
+crypto map vpn-map 10 ipsec-isakmp
+vpn-map이라는 이름의 크립토 맵 10번 항목을 만들고 설정 모드로 진입
+
+match address 100
+암호화할 트래픽 조건으로 Access-List 100번을 지정
+
+set peer 2.2.2.2
+암호화된 패킷을 받아줄 상대방 라우터의 IP를 2.2.2.2로 지정
+
+set transform-set test
+실제 데이터를 암호화할 때 방금 만들어둔 test 암호화 세트를 사용하도록 지정
+
+interface serial 0/3/0
+
+crypto map vpn-map
+방금 전까지 조립했던 vpn-map이라는 이름의 크립토 맵을 이 포트에 최종 적용
+
+
+show crypto isakmp sa
+
+----------------------------
+
+Router(config)#access-list 100 permit gre host 2.2.2.2 host 1.1.1.1
+Router(config)#acces
+Router(config)#access-list 100 permit gre 172.16.0.0 0.0.0.255 host 1.1.1.1
+Router(config)#cry
+Router(config)#crypto isakmp policy 10
+Router(config-isakmp)#authentication pre-share
+Router(config-isakmp)#encryption 3des
+Router(config-isakmp)#hash md5
+Router(config-isakmp)#exit
+Router(config)#crypto isakmp key 1234 address 1.1.1.1
+Router(config)#crypto ipsec transform-set test esp-3des esp-md5-hmac
+Router(config)#crypto map vpn-map 10 ipsec-?
+ipsec-isakmp  
+Router(config)#crypto map vpn-map 10 ipsec-isakmp
+Router(config-crypto-map)#match address 100
+Router(config-crypto-map)#set peer 1.1.1.1
+Router(config-crypto-map)#set transform-set test
+Router(config-crypto-map)#exit
+Router(config)#interface se0/3/1
+Router(config-if)#crypto map vpn-map
+Router(config-if)#exit
+Router(config)#
+Router(config)#exit
+
+-------------------------------
+
+ip http server << 해당 라우터에는 작동 안함
+
+
+프롬프트 창에서 telnet 192.168.100.1
+
+
+
+-------
+
+
+FHRP (First Hop Redundancy Protocol - 장애 대비)
+- HSRP / VRRP / GLBP
+>> 이 중 HSRP (Hot Standby Router Protocol)
+
+: 이중화(Redundancy) / HA(High Availability, 고가용성) 시스템
+
+ip	가상 IP 주소 지정	
+PC들이 게이트웨이로 사용할 **가상 IP(VIP)**를 설정하고 HSRP를 활성화합니다.
+
+
+(예: standby 1 ip 192.168.1.254)
+
+ip	가상 IP 주소 지정
+ipv6	IPv6 전용 HSRP 설정
+preempt	우선순위 탈환 (강제 승격)
+priority	우선순위(값) 지정
+timers	헬스체크 주기 설정
+track	인터페이스 상태 감시
+
+
+---------------------------
+
+standby 1 ip 192.168.100.254
+HSRP 그룹 1번의 가상 게이트웨이 IP(VIP)를 192.168.100.254로 지정
+
+standby 1 preempt
+우선순위 강제 점유(Preemption) 기능을 활성화
+
+standby 1 priority 105
+이 라우터의 HSRP 우선순위(Priority) 값을 105로 변경
+
+show standby brief
+상태 보기
+
+end device 에서 tracert 해보기
+
+a 고장나면 b가 active 상태로
+a 고치면 둘 다 speak 상태에서 a > active, b > standby 상태로
+>> preempt 설정이 있으므로
+
+GLBP>> 한번의 설정으로 부하분산 가능
+HSRP / VRRP 부하분산 하려면 다중그룹으로 묶어서 해야함
+
+HSRP - Active/Standby
+VRRP - Master/Backup
+GLBP - AVG/AVF
+
+tracking
+>>인터넷으로 나가는 포트(인터페이스)나 특정 회선에 장애가 생겼을 때 라우터 스스로 Priority(우선순위) 값을 낮춰서 백업 라우터에게 주도권을 넘겨주는 기술
+
+------------------------------
+
+standby 1 track se0/3/0
+Serial0/3/0 인터페이스(회선)의 상태를 감시(Track)하겠다
+
+------------------
+
+IPv6 주소 설정 및 라우팅
+- 128bit 16진수
+글로벌 주소  /2001::/16, 2002::16, 3ffe::/16 >> 공인IP , 인터넷 통신이 가능한 주소 , 외부와 연결
+링크 로컬 주소 /fe80::/10 >> 같은 네트워크(스위치/랜선) 안에서만 쓸 수 있는 주소 ,내부끼리
+사이트 로컬 주소 >> 회사나 집 내부 네트워크(사설망)에서만 쓰던 주소
+
+1. 처음 나오는 0 은 생략가능
+2. 연속되는 0000은 ::으로 생략하여 짧게 표시 > 한번만 가능
+
+2001:0DB8:0000:0000:0000:0000:0000:0000
+ >> 2001:DB8::
+
+2001:DB8::/32
+: 2001:DB8:0000:0000:0000:0000:0000:0000 ~ 2001:DB8:ffff:ffff:ffff:ffff:ffff:ffff
+
+2001:0DB8:0000:0000:345f:0000:0000:0000
+>> 2001:DB8::345f:0:0:0 = 2001:DB8:0:0:345f::
+
+dual stack : 하나의 장비(라우터, 스위치, PC 등)에 IPv4와 IPv6 주소를 동시에 할당해서 사용하는 기술
+
+
+-----------------------------
+
+ipv6 address 2001:2:2:2::1/64
+
+Router(config)#ipv6 unicast-routing
+
+인터페이스 IPv6 주소 할당 및 포트 활성화
+Router(config)# interface Serial0/2/0
+Router(config-if)# ipv6 address 2001:2:2:2::1/64
+Router(config-if)# no shutdown
+Router(config-if)# exit
+
+라우터 전체 IPv6 라우팅 기능 활성화 (필수)
+Router(config)# ipv6 unicast-routing
+
+인터페이스에 OSPF Area 0 할당
+Router(config)# interface Serial0/2/0
+Router(config-if)# ipv6 ospf 1 area 0
+
+OSPF 프로세스 생성 및 Router-ID 지정
+Router(config)# ipv6 router ospf 1
+Router(config-rtr)# router-id 11.11.11.11
+
+-------------------------
+
+스위치 포트를 라우터 포트(L3 포트)로 전환 및 IP 할당
+Switch(config)# interface FastEthernet0/1
+Switch(config-if)# no switchport              <-- L2 스위치 포트를 L3 라우팅 포트로 변경
+Switch(config-if)# ip address 5.5.5.5 255.255.255.0  <-- IP 주소 및 서브넷 마스크 할당
+Switch(config-if)# exit
+
+L3 스위치 전체 IP 라우팅 기능 활성화
+Switch(config)# ip routing
+
+IPv4 OSPF 프로세스 생성 및 설정 모드 진입
+Switch(config)# router ospf 1                <-- OSPF 프로세스 생성 (프로세스 ID: 1)
+Switch(config-router)#
+
+L2 스위치의 특징 및 IP 설정
+물리 포트 IP 부여 불가: L2 스위치는 포트를 라우터 포트로 바꾸는 no switchport 명령어를 지원하지 않습니다.
+원격 관리용 IP(SVI) 활용: 물리 포트가 아닌 Virtual LAN 인터페이스(interface vlan 1)에 IP를 설정하여 Telnet, SSH, Ping 등 스위치 관리 및 원격 접속 목적으로 사용합니다.
+VLAN Up 조건: interface vlan 1에 IP를 넣고 no shutdown을 해도, 스위치 물리 포트에 장비(PC, 라우터 등)가 꽂혀 포트가 작동해야만 VLAN 인터페이스 상태가 최종적으로 UP 상태로 바뀝니다.
+
+L3 스위치의 특징 및 라우팅 설정
+물리 포트 IP 부여 가능: 물리 포트에 들어가 no switchport를 입력하면 스위치 포트가 L3 라우팅 포트로 전환되어 라우터처럼 포트에 직접 IP를 할당할 수 있습니다.
+IP 라우팅 활성화 필수: L3 스위치는 기본적으로 라우터 기능이 꺼져 있으므로, 전역 모드에서 ip routing 명령어를 먼저 입력해야 OSPF 같은 라우팅 프로토콜을 설정하고 경로를 교환할 수 있습니다.
+
+
