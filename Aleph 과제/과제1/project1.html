@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="배우고, 검증하고, 개선하는 과정을 기록한 개인 포트폴리오" />
+  <title>Learning Portfolio</title>
+
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --surface-soft: #f1f4f7;
+      --text: #111827;
+      --text-secondary: #5f6b7a;
+      --text-light: #8993a2;
+      --navy: #111c35;
+      --accent: #3563e9;
+      --accent-soft: #eaf0ff;
+      --border: #e5e9ef;
+      --shadow: 0 18px 50px rgba(17, 28, 53, 0.07);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --max-width: 1120px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans KR",
+        "Apple SD Gothic Neo",
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      word-break: keep-all;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(calc(100% - 40px), var(--max-width));
+      margin: 0 auto;
+    }
+
+    /* ================================
+       Navigation
+    ================================= */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(247, 248, 250, 0.82);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(229, 233, 239, 0.7);
+    }
+
+    .nav-inner {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* 나중에 이름을 수정하세요. */
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--navy);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    /* ================================
+       Hero
+    ================================= */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 0 90px;
+    }
+
+    .hero-content {
+      max-width: 820px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      margin-bottom: 24px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: 1.1;
+      letter-spacing: -0.065em;
+      color: var(--navy);
+      margin-bottom: 28px;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-description {
+      max-width: 650px;
+      color: var(--text-secondary);
+      font-size: 18px;
+      line-height: 1.85;
+      margin-bottom: 36px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .button-primary {
+      background: var(--navy);
+      color: white;
+      box-shadow: 0 10px 25px rgba(17, 28, 53, 0.15);
+    }
+
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(17, 28, 53, 0.2);
+    }
+
+    .button-secondary {
+      background: var(--surface);
+      color: var(--navy);
+      border: 1px solid var(--border);
+    }
+
+    .button-secondary:hover {
+      transform: translateY(-2px);
+      border-color: #cbd3df;
+    }
+
+    /* ================================
+       Common Section
+    ================================= */
+    section {
+      padding: 110px 0;
+      scroll-margin-top: 72px;
+    }
+
+    .section-heading {
+      max-width: 650px;
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    .section-heading h2 {
+      color: var(--navy);
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.2;
+      letter-spacing: -0.055em;
+      margin-bottom: 16px;
+    }
+
+    .section-heading p {
+      color: var(--text-secondary);
+      font-size: 16px;
+    }
+
+    /* ================================
+       About / Learning Method
+    ================================= */
+    .about {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .strength-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .strength-card {
+      position: relative;
+      padding: 30px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+    }
+
+    .strength-card:hover {
+      transform: translateY(-5px);
+      border-color: #d4dce8;
+      box-shadow: var(--shadow);
+    }
+
+    .strength-number {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-bottom: 40px;
+    }
+
+    .strength-card h3 {
+      color: var(--navy);
+      font-size: 21px;
+      line-height: 1.4;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+    }
+
+    .strength-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    /* ================================
+       Experience
+    ================================= */
+    .experience-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .experience-card {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 50px;
+      padding: 38px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .experience-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+
+    .experience-meta {
+      border-right: 1px solid var(--border);
+      padding-right: 30px;
+    }
+
+    .experience-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .experience-meta .meta-label {
+      display: block;
+      color: var(--text-light);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-bottom: 5px;
+    }
+
+    .experience-meta .meta-value {
+      color: var(--navy);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .experience-main h3 {
+      color: var(--navy);
+      font-size: 26px;
+      line-height: 1.35;
+      letter-spacing: -0.045em;
+      margin-bottom: 28px;
+    }
+
+    .story {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .story-item {
+      padding-top: 18px;
+      border-top: 2px solid var(--border);
+    }
+
+    .story-item.action {
+      border-top-color: var(--accent);
+    }
+
+    .story-label {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--text-light);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+
+    .story-item.action .story-label {
+      color: var(--accent);
+    }
+
+    .story-item p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    /* ================================
+       Evidence
+    ================================= */
+    .evidence {
+      background: var(--navy);
+      color: white;
+    }
+
+    .evidence .section-label {
+      color: #8faaff;
+    }
+
+    .evidence .section-heading h2 {
+      color: white;
+    }
+
+    .evidence .section-heading p {
+      color: #b5bdcc;
+    }
+
+    .evidence-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: center;
+      padding: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .evidence-box h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .evidence-box p {
+      color: #b5bdcc;
+      font-size: 14px;
+    }
+
+    .evidence-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .evidence-tag {
+      padding: 7px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #d9deea;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .evidence-button {
+      white-space: nowrap;
+      background: white;
+      color: var(--navy);
+    }
+
+    .evidence-button:hover {
+      background: #eef2f8;
+      transform: translateY(-2px);
+    }
+
+    /* ================================
+       Contact
+    ================================= */
+    .contact {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .contact-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: end;
+    }
+
+    .contact-copy h2 {
+      color: var(--navy);
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.2;
+      letter-spacing: -0.055em;
+      margin-bottom: 18px;
+    }
+
+    .contact-copy p {
+      color: var(--text-secondary);
+      max-width: 520px;
+    }
+
+    .contact-links {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .contact-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      transition:
+        border-color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .contact-link:hover {
+      border-color: #cbd3df;
+      transform: translateX(4px);
+    }
+
+    .contact-link-label {
+      color: var(--text-light);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+
+    .contact-link-value {
+      color: var(--navy);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* ================================
+       Footer
+    ================================= */
+    footer {
+      padding: 28px 0;
+      background: var(--surface);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      color: var(--text-light);
+      font-size: 12px;
+    }
+
+    /* ================================
+       Scroll Animation
+    ================================= */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.7s ease,
+        transform 0.7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ================================
+       Responsive
+    ================================= */
+    @media (max-width: 800px) {
+      .container {
+        width: min(calc(100% - 32px), var(--max-width));
+      }
+
+      .nav-inner {
+        height: 64px;
+      }
+
+      .nav-links {
+        gap: 15px;
+      }
+
+      .nav-links a {
+        font-size: 12px;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 150px 0 90px;
+      }
+
+      .hero h1 {
+        font-size: clamp(40px, 12vw, 60px);
+      }
+
+      .hero-description {
+        font-size: 16px;
+      }
+
+      section {
+        padding: 80px 0;
+        scroll-margin-top: 64px;
+      }
+
+      .strength-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .experience-card {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding: 26px;
+      }
+
+      .experience-meta {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        padding-right: 0;
+        padding-bottom: 22px;
+      }
+
+      .story {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .evidence-box {
+        grid-template-columns: 1fr;
+      }
+
+      .contact-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .strength-card {
+        padding: 24px;
+      }
+
+      .experience-main h3 {
+        font-size: 22px;
+      }
+
+      .evidence-box {
+        padding: 25px;
+      }
+
+      .footer-inner {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==========================================
+       NAVIGATION
+       이름과 메뉴를 나중에 수정할 수 있습니다.
+  =========================================== -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <!-- 나중에 이름을 수정하세요. -->
+      <a href="#home" class="logo">MY PORTFOLIO</a>
+
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#evidence">Evidence</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+
+  <main>
+
+    <!-- ==========================================
+         HERO
+         이름 / 자기소개 / 핵심 메시지를 수정하세요.
+    =========================================== -->
+    <section class="hero" id="home">
+      <div class="container">
+        <div class="hero-content reveal">
+
+          <div class="eyebrow">LEARN · VERIFY · IMPROVE</div>
+
+          <h1>
+            배우고,<br />
+            검증하고,<br />
+            <span>더 나아갑니다.</span>
+          </h1>
+
+          <!-- 나중에 자기소개를 수정하세요. -->
+          <p class="hero-description">
+            새로운 것을 배울 때 모르는 부분을 그냥 넘기지 않고,
+            필요한 도움을 찾아 이해를 보완합니다.
+            배운 내용을 스스로 검증하고, 문제를 해결한 과정은 기록하며
+            다음 학습으로 연결하려고 합니다.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#experience" class="button button-primary">
+              경험 살펴보기
+            </a>
+
+            <a href="#about" class="button button-secondary">
+              배우는 방식
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         ABOUT / LEARNING METHOD
+    =========================================== -->
+    <section class="about" id="about">
+      <div class="container">
+
+        <div class="section-heading reveal">
+          <span class="section-label">ABOUT / HOW I LEARN</span>
+          <h2>배우는 과정에서도<br />방법을 찾습니다.</h2>
+          <p>
+            지금까지의 학습 경험에서 반복해서 나타난 세 가지 방식을
+            하나의 흐름으로 정리했습니다.
+          </p>
+        </div>
+
+        <div class="strength-grid">
+
+          <article class="strength-card reveal">
+            <div class="strength-number">01 / LEARN</div>
+            <h3>적극적으로 질문하고 보완합니다.</h3>
+            <p>
+              새로운 분야를 배우면서 막히는 부분을 그냥 넘어가지 않습니다.
+              강사에게 질문하고 AI를 활용해 부족한 부분을 추가로 학습하며,
+              배운 내용을 실제 과제 수행으로 연결합니다.
+            </p>
+          </article>
+
+          <article class="strength-card reveal">
+            <div class="strength-number">02 / VERIFY</div>
+            <h3>제대로 이해했는지 확인합니다.</h3>
+            <p>
+              단순히 설명을 듣고 넘어가기보다 다른 비유와 방식으로
+              다시 설명해 달라고 요청하며, 내가 개념을 제대로 이해했는지
+              스스로 교차검증합니다.
+            </p>
+          </article>
+
+          <article class="strength-card reveal">
+            <div class="strength-number">03 / IMPROVE</div>
+            <h3>문제의 원인을 기록합니다.</h3>
+            <p>
+              오류를 해결하는 것에서 끝내지 않고 발생 원인을 분석하고
+              메모합니다. 이를 통해 비슷한 문제의 반복을 줄이고,
+              경험을 다른 사람에게 설명할 수 있는 지식으로 연결합니다.
+            </p>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         EXPERIENCE
+         경험 3개를 나중에 수정할 수 있습니다.
+         각 경험은 WHEN / ACTION / RESULT 구조입니다.
+    =========================================== -->
+    <section id="experience">
+      <div class="container">
+
+        <div class="section-heading reveal">
+          <span class="section-label">EXPERIENCE / WHAT I DID</span>
+          <h2>말보다<br />과정으로 보여드립니다.</h2>
+          <p>
+            실제 경험에서 무엇을 마주했고, 어떤 행동을 했으며,
+            그 결과 무엇이 달라졌는지를 중심으로 정리했습니다.
+          </p>
+        </div>
+
+
+        <div class="experience-list">
+
+          <!-- 경험 1 -->
+          <article class="experience-card reveal">
+
+            <div class="experience-meta">
+              <div class="experience-index">01</div>
+
+              <span class="meta-label">WHERE</span>
+              <!-- 나중에 실제 장소/상황으로 수정하세요. -->
+              <div class="meta-value">학원 / 네트워크 학습</div>
+            </div>
+
+            <div class="experience-main">
+              <h3>모르는 부분을 그냥 넘기지 않는 학습</h3>
+
+              <div class="story">
+
+                <div class="story-item">
+                  <span class="story-label">WHEN / WHERE</span>
+                  <p>
+                    학원에서 네트워크 분야를 처음 접하며
+                    새로운 개념과 내용을 학습했습니다.
+                  </p>
+                </div>
+
+                <div class="story-item action">
+                  <span class="story-label">ACTION</span>
+                  <p>
+                    수업을 따라가면서 막히는 부분이 생기면
+                    강사님에게 질문하고, AI를 활용해 부족한 부분을
+                    추가로 학습했습니다.
+                  </p>
+                </div>
+
+                <div class="story-item">
+                  <span class="story-label">RESULT</span>
+                  <p>
+                    배운 내용을 이해하고 과제를 성공적으로
+                    수행할 수 있었습니다.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </article>
+
+
+          <!-- 경험 2 -->
+          <article class="experience-card reveal">
+
+            <div class="experience-meta">
+              <div class="experience-index">02</div>
+
+              <span class="meta-label">WHERE</span>
+              <!-- 나중에 실제 장소/상황으로 수정하세요. -->
+              <div class="meta-value">학원 / 새로운 내용 학습</div>
+            </div>
+
+            <div class="experience-main">
+              <h3>이해한 내용을 다른 관점에서 검증하기</h3>
+
+              <div class="story">
+
+                <div class="story-item">
+                  <span class="story-label">WHEN / WHERE</span>
+                  <p>
+                    학원에서 새로운 내용을 학습하면서
+                    개념을 이해하고 다음 단계로 넘어가야 했습니다.
+                  </p>
+                </div>
+
+                <div class="story-item action">
+                  <span class="story-label">ACTION</span>
+                  <p>
+                    배운 내용을 AI에게 비슷한 비유나 다른 방식으로
+                    설명해 달라고 요청하고, 내가 제대로 이해하고 있는지
+                    교차검증했습니다.
+                  </p>
+                </div>
+
+                <div class="story-item">
+                  <span class="story-label">RESULT</span>
+                  <p>
+                    처음에는 애매하게 이해했던 내용도 개념 간의 흐름을
+                    확실하게 잡고 다음 단계로 넘어갈 수 있었습니다.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </article>
+
+
+          <!-- 경험 3 -->
+          <article class="experience-card reveal">
+
+            <div class="experience-meta">
+              <div class="experience-index">03</div>
+
+              <span class="meta-label">WHERE</span>
+              <!-- 나중에 실제 장소/상황으로 수정하세요. -->
+              <div class="meta-value">프로그래밍 학습</div>
+            </div>
+
+            <div class="experience-main">
+              <h3>오류를 해결하는 것에서 원인을 기록하는 것으로</h3>
+
+              <div class="story">
+
+                <div class="story-item">
+                  <span class="story-label">WHEN / WHERE</span>
+                  <p>
+                    프로그래밍을 공부하면서 오류가 발생하거나
+                    학습이 막히는 상황을 경험했습니다.
+                  </p>
+                </div>
+
+                <div class="story-item action">
+                  <span class="story-label">ACTION</span>
+                  <p>
+                    단순히 오류를 해결하는 데서 끝내지 않고,
+                    왜 해당 오류가 발생했는지 원인을 분석하고
+                    그 내용을 메모해두었습니다.
+                  </p>
+                </div>
+
+                <div class="story-item">
+                  <span class="story-label">RESULT</span>
+                  <p>
+                    비슷한 오류가 다시 발생하는 비중이 크게 줄었고,
+                    비슷한 문제를 겪는 주변 사람들에게 원인과
+                    해결 방향을 조언할 수 있게 되었습니다.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         EVIDENCE
+         실제 링크를 추가할 때 아래 영역을 수정하세요.
+    =========================================== -->
+    <section class="evidence" id="evidence">
+      <div class="container">
+
+        <div class="section-heading reveal">
+          <span class="section-label">EVIDENCE / LEARNING RECORD</span>
+          <h2>경험을 보여줄 수 있는<br />기록을 연결합니다.</h2>
+          <p>
+            실제로 공개 가능한 학습 기록이나 과제를 추가하면
+            위의 경험과 근거를 한 화면에서 연결할 수 있습니다.
+          </p>
+        </div>
+
+        <div class="evidence-box reveal">
+
+          <div>
+            <h3>공개 가능한 학습 기록</h3>
+
+            <p>
+              아래 영역에 실제 공개 가능한 자료의 링크를 추가할 수 있습니다.
+              현재는 실제 링크를 제공받지 않았으므로 가짜 링크를 사용하지 않습니다.
+            </p>
+
+            <div class="evidence-items">
+              <span class="evidence-tag">학원 과제</span>
+              <span class="evidence-tag">오류 / 원인 메모</span>
+              <span class="evidence-tag">학습 정리</span>
+              <span class="evidence-tag">작성한 코드</span>
+            </div>
+          </div>
+
+          <!--
+            ==========================================
+            실제 공개 가능한 링크를 추가하세요.
+
+            예:
+            <a href="실제링크" target="_blank" class="button evidence-button">
+              학습 기록 보기 →
+            </a>
+
+            실제 링크를 받기 전까지는 가짜 링크를 만들지 않습니다.
+          ==========================================
+          -->
+
+          <span class="button evidence-button">
+            기록 추가 예정
+          </span>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         CONTACT
+         이메일 / 연락처 / GitHub 등을 나중에 수정하세요.
+    =========================================== -->
+    <section class="contact" id="contact">
+      <div class="container contact-inner">
+
+        <div class="contact-copy reveal">
+          <span class="section-label">CONTACT</span>
+
+          <h2>
+            더 궁금한 점이<br />
+            있다면 연락해주세요.
+          </h2>
+
+          <p>
+            학습 과정이나 경험에 대해 더 이야기하고 싶다면
+            아래 연락처를 통해 연결할 수 있습니다.
+          </p>
+        </div>
+
+
+        <div class="contact-links reveal">
+
+          <!-- 나중에 실제 이메일로 수정하세요. -->
+          <a
+            href="mailto:YOUR_EMAIL@example.com"
+            class="contact-link"
+          >
+            <span class="contact-link-label">EMAIL</span>
+            <span class="contact-link-value">
+              YOUR_EMAIL@example.com
+            </span>
+          </a>
+
+          <!--
+            나중에 실제 GitHub 주소로 수정하세요.
+
+            예:
+            href="https://github.com/사용자명"
+          -->
+          <a
+            href="#"
+            class="contact-link"
+            onclick="return false;"
+          >
+            <span class="contact-link-label">GITHUB</span>
+            <span class="contact-link-value">
+              링크 추가 예정 →
+            </span>
+          </a>
+
+          <!-- 나중에 실제 기타 링크를 추가할 수 있습니다. -->
+          <a
+            href="#"
+            class="contact-link"
+            onclick="return false;"
+          >
+            <span class="contact-link-label">OTHER</span>
+            <span class="contact-link-value">
+              링크 추가 예정 →
+            </span>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ==========================================
+       FOOTER
+    =========================================== -->
+  <footer>
+    <div class="container footer-inner">
+      <!-- 나중에 이름을 수정하세요. -->
+      <span>© 2026 MY PORTFOLIO</span>
+      <span>Learn · Verify · Improve</span>
+    </div>
+  </footer>
+
+
+  <script>
+    /* ==========================================
+       Smooth Navigation
+       상단 메뉴 클릭 시 부드럽게 이동합니다.
+    =========================================== */
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener("click", function (event) {
+        const targetId = this.getAttribute("href");
+
+        if (!targetId || targetId === "#") return;
+
+        const target = document.querySelector(targetId);
+
+        if (target) {
+          event.preventDefault();
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }
+      });
+    });
+
+
+    /* ==========================================
+       Scroll Reveal
+       화면에 들어온 콘텐츠를 자연스럽게 표시합니다.
+    =========================================== */
+    const revealElements = document.querySelectorAll(".reveal");
+
+    const revealObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.12
+      }
+    );
+
+    revealElements.forEach((element) => {
+      revealObserver.observe(element);
+    });
+  </script>
+
+</body>
+</html>
+
