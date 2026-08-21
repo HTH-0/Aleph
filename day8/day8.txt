@@ -1,0 +1,362 @@
+CRUD : 기초
+Create / Read / Update / Delete  
+
+Insert / Select / Update / Delete >> sql 에서의 crud 커맨드
+
+------------------
+------------------
+내용물을 보고싶다면?
+
+show databases;	>데이터베이스들을 본다
+show tables;	> 테이블들을 본다
+desc [테이블명];	> 테이블을 상세보기
+
+------------------
+------------------
+create database school;
+	school 이라는 데이터베이스를 생성한다
+
+use school;
+
+
+create table student ( name varchar(8), date int(4), phone int(10));
+	>>(컬럼이름 자료형식, 컬럼이름 자료형식, ... );
+	>>> student 라는 테이블을 만든다( name, date, phone 라는 컬럼을 가진다 )
+
+
+ALTER
+
+alter table student add address varchar(8);
+	>> student 테이블을 수정한다, 테이블에 address 라는 컬럼을 추가한다
+
+alter table student add age int(3) after date;
+	>> 테이블을 추가할때 after date >> date 컬럼 뒤에 추가한다 / 젤 위로 오게 하고싶다면 first
+
+alter table student add (age2 int(3) age3 int(3));
+	>> 여러가지 컬럼을 추가할때는 () 안에 집어넣고 ,로 구분한다.
+
+alter table student modify name varchar(8) first;
+	>> 컬럼을 수정한다. name 컬럼이 처음에 오도록
+
+alter table student modify age int(3) after address;
+	>> 컬럼을 수정한다. age 컬럼이 address 컬럼 뒤에 오도록
+
+ alter table student drop age2;
+	>> 컬럼을 삭제한다
+
+alter table student change mbti subject varchar(4);
+	>> 컬럼 이름 수정
+
+
+
+INSERT
+
+insert into student values ( '데이터', '데이터', 숫자데이터 ... );
+	>> student 테이블에 값을 집어넣는다
+	>> ( )안에 컬럼을 포함하고, 문자는 ' ' 안에 데이터를 집어넣고 숫자는 그냥 넣기
+
+insert into student (컬럼명1, 컬럼명2 ) values( '데이터1', 숫자데이터);
+
+
+UPDATE
+
+update student set date = 2026;
+	>> student 테이블의 date 컬럼의 모든 내용을 2026으로 갱신한다.
+
+update student set address = 'daegu' where name = 'kim';
+	>> student 테이블의 name 값이 'kim'인 행(Row)을 찾아 address 컬럼값을 'daegu'로 갱신한다.
+
+update student set name = 'park', date = 2020 where name = 'kim';
+	>>  여러개의 컬럼을 수정하고 싶다면 , 로 구분해서 적는다.
+
+
+DELETE
+
+delete from student where name = 'park';
+	>> name 컬럼이 park 인 행을 삭제한다.
+
+ delete from student;
+	>> student 안의 모든 데이터삭제
+
+
+DROP
+
+drop table student;
+	>> 테이블 삭제
+
+drop database school;
+	>> database 삭제
+
+
+----------------------------------------
+
+예제)
+School - Teacher - ( Name, Age, Subject ) 생성 후
+Address field 추가
+Phone field Age 뒤에 추가
+
+임의로 3개 데이터 열 입력 후
+Subject 필드 모든 데이터를 Security 로 변경
+Name 필드의 특정 열의 데이터 값 수정
+
+>>
+school : database
+teacher : table
+
+create database School;
+use School;
+create table Teacher (Name varchar(10), Age int(3), Subject varchar(8));
+alter table Teacher add Address varchar(12);
+alter table Teacher add Phone int(12) after Age;
+insert into Teacher values ('ga', 13, 1234123412, 'math', 'daegu');
+2개더
+update Teacher set Subject = 'Security';
+update Teacher set name = 'gga' where name = 'ga';
+
+-----------------------------------
+
+Https 설정
+
+/etc/httpd/conf/ssl << 여기에 담는다
+mkdir /etc/httpd/conf/ssl
+cd /etc/httpd/conf/ssl
+
+openssl genrsa -des3 -out test.com.key
+	openssl genrsa: OpenSSL을 사용하여 RSA 개인키를 생성
+	-des3: 생성되는 개인키를 Triple-DES(3DES) 알고리즘으로 암호화
+	-out test.com.key: 생성된 키를 저장할 파일명
+
+
+openssl req -newkey rsa:2048 -nodes -keyout /etc/httpd/conf/ssl/test.com.key -x509 -days 365 -out /etc/httpd/conf/ssl/test.com.crt
+	openssl req : OpenSSL 프로그램에 인증서 요청(CSR) 관리 및 X.509 인증서 생성 모드
+	-x509 : 자기 자신이 서명한(Self-Signed) 인증서를 직접 출력
+	-newkey rsa:2048 : 방식을 RSA, 길이를 표준 안전 규격인 2048비트 의 새로운 개인키
+	-nodes :개인키에 비밀번호(Passphrase)를 걸지 않음
+	-keyout /etc/httpd/conf/ssl/test.com.key : 생성된 개인키(Private Key)를 지정한 경로와 파일명으로 저장
+	-out /etc/httpd/conf/ssl/test.com.crt : 생성된 인증서(Certificate)를 지정한 경로와 파일명으로 저장
+	-days 365 : 유효기간 1년
+
+Country Name (2 letter code) [XX]:KR
+State or Province Name (full name) []:Daegu
+Locality Name (eg, city) [Default City]:Daegu
+Organization Name (eg, company) [Default Company Ltd]:KIT
+Organizational Unit Name (eg, section) []:Security
+Common Name (eg, your name or your server's hostname) []:test.com
+Email Address []:admin@test.com
+
+
+openssl x509 -noout -text -in test.com.crt
+	openssl x509 : penSSL 프로그램의 X.509 인증서 관리 및 출력 도구를 실행
+	-noout : 인코딩된 암호화 텍스트 출력 안되게
+	-text : 평문 텍스트 형태로 펼쳐서 보이게
+	-in test.com.crt : 상세 정보를 분석하고 조회할 대상 인증서 파일의 경로와 이름을 지정
+
+httpd -M
+	>> sl_module (shared) 모듈이 있는지 확인한다
+
+>> 없을 경우
+dnf install -y mod_ssl
+	>> apache 전용 SSL/TLS 모듈 패키지(mod_ssl)를 설치
+
+vi /etc/httpd/conf.d/ssl.conf
+	5번 Listen 443 https  >> https 기본 서비스 포트
+	23, 24
+	33 SSLCryptoDevice builtin 
+	48
+	54 SSLEngine >>> on 되어있어야함 ** 중요
+	66 암호관련
+	85 인증서 파일 위치  >> SSLCertificateFile /etc/httpd/conf/ssl/test.com.crt  경로 수정
+	93 키 파일 위치 >> SSLCertificateKeyFile /etc/httpd/conf/ssl/test.com.key 경로 수정
+
+systemctl restart httpd
+	>> 바뀐 내용 적용을 위해 재시작
+
+firewall-cmd --permanent --add-service=https
+	>> 443 포트를 위해 방화벽 설정
+
+firewall-cmd --reload
+	>> 적용을 위한 재시작
+
+firewall-cmd --list-all
+	>> 추가가 되었는지 확인 > 포트가 아니라 service로 추가했기 때문에 service 에 https 확인
+
+>>> 실제 접속하면 x 주의요함 뜸 > 인증서를 직접 작성했으므로
+
+-------------------------------------------
+
+ftp / ftps / sftp
+
+FTP 포트 구성
+21번 포트: 로그인, 파일 목록 조회, 삭제 등 명령어를 주고받는 제어 채널.
+20번 포트: Active 모드에서 실제 파일 데이터를 전송하는 데이터 채널
+1024번 이상 임의 포트: Passive 모드에서 서버가 파일 데이터 전송을 위해 동적으로 개방하여 사용하는 데이터 채널
+
+FTP 연결 방식
+Active 모드: 클라이언트가 21번 포트로 연결을 요청하면, 서버가 20번 포트를 통해 클라이언트 측으로 역방향 데이터 연결을 시도하는 방식
+Passive 모드: 클라이언트가 21번 포트로 접속한 뒤, 서버가 안내해 주는 1024번 이상의 임의 포트로 클라이언트가 직접 순방향 데이터 연결을 시도하는 방식
+
+-------------------------
+
+. : 자기 자신
+.. : 상위 디렉토리
+
+---------------------
+
+dnf install -y vsftpd
+
+vi /etc/vsftpd/vsftpd.conf
+	12 anonymous_enable=NO : 익명 사용자 접속 no
+	15 로컬 사용자
+	18 쓰기 기능 >> 업로드, 수정, 삭제 등등 가능
+	22
+	36 dirmessage_enable=YES
+	39 xferlog_enable=YES
+	42 connect_from_port_20=YES  > 전송 채널 20포트
+	59  #idle_session_timeout=600 > 주석 해제하면 일정 시간 무응답 시 자동 접속 종료 시간 600초로 설정
+	62
+	82 텍스트(문서) 파일을 주고받을 때 텍스트 줄바꿈 형식(엔터 값)을 자동으로 변환해 주는 옵션 ,업로드
+	83 다운로드
+	100 
+	101 
+	114 listen = no 
+	127빈줄 max_client = 10 >> 동시 접속자 수 설정 가능 ( 빈 곳에 기입 )
+	128 local_max_rate = 100000 >> 전송 속도 제한
+	129 use_localtime = YES >> FTP 서버의 파일 시간(타임스탬프) 표기 기준을 세계 표준시(UTC)가 아닌 서버의 현지 시간(Local Time)으로 사용
+
+
+systemctl start vsftpd
+	>> ftp 시작
+
+systemctl enable vsftpd
+	>> 계속 적용
+
+firewall-cmd --permanent --add-service=ftp
+	>> 방화벽에 ftp 서비스 영구 등록
+
+firewall-cmd --reload
+	>> 적용을 위해 재시작
+
+useradd ftptest
+	>> user 등록 
+
+passwd ftptest
+	>> password 지정
+
+cd /home/ftptest
+	>> 해당 폴더로 이동
+
+mkdir document
+mkdir music
+touch ftptest.txt
+
+----------------------
+
+filezilla
+	>> host : 내 ip(리눅스), 사용자명 : ftptest, 비밀번호 : 설정한거
+
+-----------------
+
+ftps
+
+
+cd /etc/vsftpd
+
+openssl req -newkey rsa:2048 -nodes -keyout /etc/vsftpd/vsftpd.pem -x509 -days 365 -out /etc/vsftpd/vsftpd.pem
+
+Country Name (2 letter code) [XX]:kr
+State or Province Name (full name) []:daegu
+Locality Name (eg, city) [Default City]:daegu
+Organization Name (eg, company) [Default Company Ltd]:kit
+Organizational Unit Name (eg, section) []:security
+Common Name (eg, your name or your server's hostname) []:test.com
+Email Address []:test@test.com
+
+ vi /etc/vsftpd/vsftpd.conf
+>> 추가 기입
+#SSL Configuration
+    132 ssl_enable=YES
+    133 rsa_cert_file=/etc/vsftpd/vsftpd.pem
+    134 force_local_logins_ssl=YES
+    135 ssl_tlsv1=yes
+    136 allow_anon_ssl=NO
+    137 pasv_enable=YES
+    138 pasv_min_port=50000
+    139 pasv_max_port=55000
+
+firewall-cmd --permanent --add-port=50000-55000/tcp
+
+firewall-cmd --reload
+
+systemctl restart vsftpd
+
+----------------------
+
+filezilla
+
+호스트 : ftps://192.168.16.47
+
+사이트관리자 >> 새 사이트 >> 이름 : ftps_test
+프로토콜 : ftp
+호스트 : 192.168.16.47
+암호화 : tls를 통한 명시적 ftp가 가능한 경우 사용
+사용자 : ftptest
+
+
+호스트 : sftp://192.168.16.47
+사이트 관리자 >> 새 사이트 >> 이름 : sftp_test
+프토로콜 : sftp
+
+--------------------------------
+
+SSH 서버
+
+systemctl status sshd
+
+ vi /etc/ssh/sshd_config
+>> 마지막 줄에 추가
+	#Subsystem       sftp    internal-sftp
+	>> SFTP 서비스를 어떤 방식으로 실행할지 지정하는 설정값 >> 만약 sftp 안되면 주석 해제
+
+
+------------------------
+
+DNS
+	>  도메인 이름(예: google.com)"과  IP 주소(예: 142.250.196.142)를 서로 연결해 주는 역할
+	관리자 권한 메모장 >> host 파일 수정
+	cmd >> ping 테스트 www.google.com >> 구글 ip 주소 알아내기
+	>> 호스트 보안 중요하다
+
+dnf install -y bind bind-utils
+
+vi /etc/named.conf
+     10 options {
+     11         listen-on port 53 { 127.0.0.1; };	>> 127.0.0.1 을 any로 변경
+     12         listen-on-v6 port 53 { ::1; };
+     13         directory       "/var/named";		>> name 서버가 있는 root directory
+     14         dump-file       "/var/named/data/cache_dump.db";	
+     15         statistics-file "/var/named/data/named_stats.txt";
+     16         memstatistics-file "/var/named/data/named_mem_stats.txt";
+     17         secroots-file   "/var/named/data/named.secroots";
+     18         recursing-file  "/var/named/data/named.recursing";
+     19         allow-query     { localhost; };		>> localhost 을 any로 변경
+     20
+     21         /
+
+     31         recursion yes;	>> 재귀적 질의 허용 >> 상위 dns에게 물어 최종 ip를 알려주는 기능
+					>> no 라고 한다면? : 내 서버에 등록된 존(Zone) 파일에 대한 정보만 응답하고, 외부 도메인을 물어보면 "모른다"고 거절
+
+     52 zone "." IN {		>> zone "htht.com" IN 
+     53         type hint;		>> type master;
+     54         file "named.ca";	>> file "htht.com.zone";
+    추가  >> allow-update { none; };
+     55 };
+
+named-checkconf /etc/named.conf
+	>> 문법적으로 잘 되었는지 확인
+
+cd /var/named
+	>> name 서버의 root 디렉토리
+
+touch htht.com.zone
+
+
