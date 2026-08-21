@@ -1,10 +1,3 @@
-```markdown
-# Rocky Linux 9 & APM Server Infrastructure Guide
-
-VirtualBox 기반 Rocky Linux 9 환경 구축부터 기본 명령어, VI 편집기, 파일 권한 관리 및 APM(Apache, PHP, MariaDB) 웹 서버 구축까지의 정리 문서입니다.
-
----
-
 ### 1. VirtualBox 환경 구성 및 VM 생성
 
 **가상머신(VM) 사양 설정**
@@ -139,7 +132,6 @@ find /var/log -size +100M       # 100MB 이상 대용량 파일 검색
 
 # 4. 검색 결과에 명령어 실행
 find . -name "*.tmp" -exec rm -f {} \;   # 검색된 .tmp 파일 일괄 삭제
-
 ```
 
 ---
