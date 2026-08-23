@@ -231,4 +231,3 @@ SELECT user, host, password FROM user;
 * **문자형:** `CHAR(N)` (고정 길이), `VARCHAR(N)` (가변 길이), `TEXT` (대용량 본문)
 * **숫자형:** `INT` (기본 정수), `BIGINT` (대규모 정수), `DECIMAL` (고정소수점 실수)
 * **날짜형:** `DATE` (YYYY-MM-DD), `DATETIME` (YYYY-MM-DD HH:MM:SS)
-```
