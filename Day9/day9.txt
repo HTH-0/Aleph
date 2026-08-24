@@ -1,0 +1,262 @@
+vi /etc/named.conf 까지 한 상태
+
+----------------------------------
+
+///DNS 세팅///
+
+
+named-checkconf /etc/named.conf
+	>> conf 파일 문법 이상은 없는지 체크
+
+cmd 창에서
+	nslookup
+	기본 서버:  kns.kornet.net
+	Address:  168.126.63.1
+	>>> 기본 dns 서버 찾기
+
+
+vi /var/named/htht.com.zone
+	>>zone 파일 만들고 수정
+
+[작성내용]
+$TTL 86400
+@	IN      SOA     ns.htht.com. root.htht.com. (
+                        20260824
+                        24H
+                        15M
+                        48H
+                        86400 );
+	IN      NS      ns.htht.com.
+	IN      A       192.168.16.47
+ns	IN      A       192.168.16.47
+www	IN      A       192.169.16.47
+
+[설명]
+$TTL 86400: 정보 저장(캐시) 시간
+@ IN SOA ns.htht.com. root.htht.com.: 원본 설정 선언, 네임서버 및 관리자 이메일
+20260824(Serial): 설정 파일 버전 번호
+24H(Refresh): 보조 서버 동기화 주기
+15M(Retry): 재시도 대기 시간
+48H(Expire): 데이터 유효 만료 시간
+86400(Minimum TTL): 존재하지 않는 도메인 응답 기억 시간
+IN NS ns.htht.com.: 네임서버 이름 등록
+IN A 192.168.16.47: htht.com 기본 IP
+ns IN A 192.168.16.47: ns.htht.com 네임서버 IP
+www IN A 192.169.16.47: [www.htht.com](https://www.htht.com) 웹서버 IP
+
+
+named-checkzone htht.com /var/named/htht.com.zone
+	>> zone 파일 문법 검사
+
+firewall-cmd --permanent --add-service=dns
+	>> 방화벽에 영구적으로 dns 서비스 등록 ( 포트로 하려면 tcp , udp 다 열어야함)
+
+firewall-cmd --reload
+	>> 적용
+
+firewall-cmd --list-all
+	>> 적용 된 부분 확인 ( service 쪽에서 dns 확인 )
+
+systemctl start named
+	>> named(dns) 서비스 시작한다
+
+systemctl enable named
+	>> dns 서비스가 재부팅해도 적용되게 한다
+
+--------------------------------
+
+/// 윈도우 설정///
+
+네트워크 및 인터넷 >> 고급 네트워크 설정 >> 이더넷 4 선택(realtek) >> 추가 속성 보기
+	>> IPv4 DNS 서버 : 192.168.63.1  >> 이걸 192.168.16.47 수정
+				2차는 삭제
+
+htht.com 넣어서 접속 되는지 확인
+
+---------------------
+
+/// filezilla ///
+
+호스트에서 192.168.16.47 으로 접속
+>> 접속 가능
+
+filezilla 에서 ftp 연결을 위해
+
+vi /var/named/htht.com.zone
+	>> ftp     IN      A       192.168.16.47 추가
+
+systemctl restart named
+	>> 서비스 재시작해서 갱신
+
+
+ftp.htht.com 으로 접속 시도
+	>> 접속 확인
+
+
+>> help.htht.com 으로 접속하고 싶다면??
+vi /var/named/htht.com.zone
+	>> help	IN	A	192.168.16.47  추가
+
+/// cmd ///
+
+nslookup htht.com 192.168.16.47
+nslookup htht.com
+	>> name 서버가 잘 뜨는지 확인
+
+
+/// putty ///
+
+host htht.com localhost
+	>> host 확인
+dig htht.com @localhost
+	>> 더 자세히 보는법
+
+
+/// 윈도우 설정 ///
+>> 다 확인 했으면 아까 했던 추가 속성 보기
+>> dns 서버 할당 > 편집 > 자동
+>> 또는 1차 168.126.63.1 2차 168.126.63.2 입력
+
+
+----------------------------------------------
+
+// Window Server 위한 VM 만들기 //
+
+새로 만들기
+> harddisk : 50Gb
+
+설정
+> OS Version : Windows Server 2025
+
+설정
+시스템 > 마더보드 : 
+부팅순서 : 하드 / 광 / (플로피는 체크박스 해제)
+
+시스템 > 프로페서 :
+PAE/NX 밑에 있는 Nested ~~~ 이 체크박스가 비활성화 되어있는지 확인 >> 활성화 되어있다면 체크 해야함
+
+저장소 > 컨트롤러 IDE (CD Rome) : server iso 파일 넣기
+
+오디오 > 오디오활성화, usb 컨트롤러 활성화 >> 체크박스 해제
+
+네트워크 > 어댑터에 브리지(호스트에 연결), promiscuous Mode (무차별) : 거부, virtual cable connected 체크 된거 확인
+
+>> 실행
+
+desktop Experience
+라이센스 동의 체크 
+custom > new > 확인
+
+primary  > format  >> primary 선택하고 next
+
+설치 다 되면 비밀번호 설정
+1q2w3e4r^^
+
+>> 뜨는 unlock 창 
+입력 > 키보드 > Ctrl-Alt-Del 선택
+서버 연결 yes, 관리자 창 닫기
+
+----------------------------------------
+
+/// VM/Window ///
+
+
+윈도우창 > server manager >> IIS 설치 해야함
+우상단 manager
+	> add roles and features
+	> next 
+	> next 
+	> Server Selection 에서 ip 주소 확인 
+	> DNS, Web Server(IIS) 체크
+	> 쭉 next
+	> IIS Role Services 에서 FTP Server 체크 
+	> install
+tools 에 IIS, DNS 추가된것 확인
+
+-------------------------------------
+
+/// IIS 테스트 ///
+
+
+IIS Manager 창
+	> 왼쪽 컴퓨터 확장 > Sites > Default Web Site 삭제
+	> Sites 우클릭 Add Website
+
+physical path
+	> C:\inetpub\wwwroot
+binding 
+	> ip address : 화살표 클릭해서 내 ip로
+
+만든 웹서버 클릭해서 오른쪽 Browse Website 확인
+
+default document : 시작 페이지 설정 >> index.html 1순위로
+
+파일 탐색기 > c > inetpub > wwwroot > index.html 만들기
+웹페이지 192.168.16.19 확인해보기
+
+----------------------------------
+
+/// FTP 테스트 ///
+
+
+computer management
+	> Local Users and Groups > Users > New User 
+	> ftptest , 비밀번호 : 1q2w3e4r^^
+	> User must change ~ : 체크 해제
+	> 두번째, 세번째 체크박스 : 체크
+
+
+tools > IIS Manager > 컴퓨터 우클릭해서 Add FTP Site
+	ame : Win-FTP
+	path : C:\inetpub\ftproot
+	ip address : 192.168.16.19
+	No SSL > next
+	Authentication : 둘 다 체크
+	Authorization : Specified users, ftptest 입력  >> 추가하고 싶으면 , 로 사용자 나누어서 쭉 
+	Permission : 둘 다 체크
+
+VM > 방화벽 > turn win ~~ : 다 해제
+
+----------------------------------
+
+/// filezilla ///
+
+192.168.16.19 , ftptest, 1q2w3e4r^^ 입력 후 연결
+	/ 디렉터리 : C:\inetpub\ftproot/
+
+--------------------------------------
+
+IIS Manager > Win-FTP
+	Current Session : 현재 연결된 세션
+	Authentication : 인증
+	Authorization Rules : 인가
+	IP Addresss and Domain Restrictions : IP나 도메인 차단  >> 디폴트는 전부 allow
+	FTP Request Filtering : request 필터
+
+----------------------------------
+
+/// 도메인 설정 ///
+
+
+tools > DNS
+
+forward lookup zone > new  >>  리눅스에서 하던 htht.com.zone 파일 만드는 작업이랑 동일
+	> zone name : hthth.com
+	> 생성하고 나면 내부에 이미 SOA, NS 레코드는 들어있음
+	>> Name Servers : win- ~ 클릭하고 edit >> resolve 	 >>> ip 생기면 ok
+
+hthth.com 창에서 우클릭 
+	New Host(A AAAA)
+	> name : web
+	> ptr 체크 박스 체크 (의미없음 , reverse 필요) 경고 무시하고 done
+	>> name : file 일때도 동일하게 생성
+	
+	New Host(CName)	>> 별칭 지정하기 (alias)
+	> alias name : myweb
+
+--------------------------------------
+
+/// 윈도우 설정 ///
+	
+	테스트를 위해 dns 서버 변경
+	192.168.16.19 로 변경하고 도메인 접속
