@@ -1,0 +1,302 @@
+tools
+local security policy
+	> Account Policy 
+	> Password Policy
+		>> password must meet coplexity requirements : 패스워드 복잡성 설정
+	> Account Lockout Policy : 계정 잠금 정책
+
+Local Policies
+	> Security Options
+		> Interactive login : Do not require CTRL + ALT + DEL : 시작할때 이거 안눌러도 됨
+
+
+	>Audit Policy
+		> Audit logon events : 로그인 성공/실패 시 로그 남길 것인가?
+
+------------------------------------------------
+
+NFS / Samba : 네트워크 파일 공유 프로토콜/서비스
+
+NFS : 리눅스 ↔ 리눅스 서버끼리 데이터를 빠르게 실시간 공유
+Samba :  리눅스 ↔ 윈도우 PC 간에 파일이나 프린터 자원을 공유
+
+
+===== ip체크 =================
+|  rocky 복제 - 서버 :		192.168.16.95 |
+|  rockyhttps - 클라이언트:	192.168.16.77 |
+===========================
+
+rocky 복제 를 서버로 설정
+rockyhttps 를 클라이언트로 설정
+
+------------------------------------------------------------------------
+
+<서버, 클라이언트>
+dnf install -y nfs-utils
+	> nfs 를 설치한다.
+
+
+<서버>
+systemctl start nfs-server
+systemctl enable nfs-server
+
+systemctl start rpcbind
+systemctl enable rpcbind
+
+
+<클라이언트>
+systemctl start rpcbind
+systemctl enable rpcbind
+
+
+<서버>
+mkdir /nfsserver
+chmod 756 /nfsserver
+
+vi /etc/exports		>> new file 표시 없음 : 원래 있던 파일
+	> /nfsserver 12.168.16.77(rw,sync,no_root_squash)	: rw 읽기쓰기, sync 동기화, 서버에서도 root 권한으로
+
+exportfs -a
+	> exports 파일을 적용한다
+exportfs
+	> 적용됐는지 확인
+
+firewall-cmd --permanent --add-port=2049/tcp
+firewall-cmd --reload
+
+
+<클라이언트>
+mkdir /nfsclient
+
+mount -t nfs 192.168.16.95:/nfsserver /nfsclient
+	> 서버 ip 에 있는 /nfsserver 파일과 /nfsclient를 nfs로 마운트 한다
+
+df
+	> 디스크 용량을 확인하는 커맨드,
+	> 192.168.16.95:/nfsserver   8318976 1846528   6472448  23% /nfsclient 있어야함
+
+
+서버에서 mkdir, touch 사용했을때 클라이언트에 생기는지 확인, 반대의 상황도 확인
+
+언마운트 하고싶다면
+cd / 
+umount /nfsclient
+
+----------------------------------------------------
+
+
+/// Samba /// 
+
+<Server>
+dnf install -y samba samba-common samba-client
+
+mkdir /sambatest
+
+chmod 777 /sambatest
+
+useradd sambauser
+	> passwd sambauser 는 하지 않는다. > samba 전용 비밀번호를 사용 
+
+smbpasswd -a sambauser
+	>> samba 전용 비밀번호 등록>> 윈도우에 삼바 계정 등록
+	-x : 윈도우 계정 삭제
+	-d : 비활성화
+	-e : 활성화
+	-n : 비밀번호 없는 계정으로
+		>> 완전 삭제하고 싶다면 userdel , smbpasswd -x 다 적용해야함
+
+vi /etc/samba/smb.conf
+	> global 서버 전체에 적용, homes 해당 사용자 홈 디렉토리, printers 프린터 공유
+	>> 아래 추가
+[sambashare]
+        path = /sambatest
+        browseable = yes
+        writable = yes
+        guest ok = yes
+        read only = no
+        create mask = 0777
+        directory mask = 0777
+
+testparm
+	> 문법 테스트
+
+smbstatus
+
+
+firewall-cmd --permanent --add-service=samba
+firewall-cmd --reload
+firewall-cmd --list-all
+
+systemctl start smb nmb
+systemctl enable smb nmb
+
+
+<윈도우>
+실행 > \\192.168.16.95 > sambauser , 1234 입력  : 공유폴더 확인 실행해보고 에러 확인
+
+
+<서버>
+smbstatus 로 로그 확인
+
+vi /etc/selinux/config
+	>SELINUX=enforcing  >> disabled 로 변경
+
+sestatus
+	>> Current mode : enforcing >> 적용이 안되어있음 >> 재부팅 필요
+
+재접속 이후 sestatus
+	> SELinux status:                 disabled
+	> 윈도우에서도 접속 가능
+
+
+----------------------------------
+
+hostnamectl set-hostname server
+
+hostname
+
+vi /etc/hosts
+	> 127.0.0.1   server 로 첫줄 수정
+
+
+-----------------------------------
+
+/// rsys ///
+
+<서버, 클라이언트>
+dnf install -y rsyslog rsyslog-doc
+
+
+<서버>
+
+vi /etc/rsyslog.conf
+	> 10 
+	> 41번 라인에 추가 기입
+	>> 	$ModLoad imudp
+		$inputUDPServerRun 514
+
+		$ModLoad imtcp
+     		$inputTCPServerRun 514
+
+firewall-cmd --permanent --add-port=514/udp
+firewall-cmd --permanent --add-port=514/tcp
+
+firewall-cmd --reload
+firewall-cmd --list-all
+
+systemctl start rsyslog
+systemctl enable rsyslog
+
+
+dnf install -y net-tools lsof
+
+lsof -i tcp:514
+netstat -natpl | grep 514
+tail -f /var/log/messages
+	>> 514 관련 검색 안됨
+
+systemctl restart rsyslog
+netstat -natpl | grep 514
+	>> 적용하고 나니 검색 됨
+
+
+
+<클라이언트>
+ 
+vi /etc/rsyslog.conf
+	>> 추가 기입
+	83 *.* @@192.168.16.95:514		>> udp
+	84 *.* @192.168.16.95:514		>> tcp
+
+systemctl start rsyslog
+systemctl enable rsyslog
+
+	>> 클라이언트라 방화벽 작업은 생략
+
+
+<서버>
+tail -f /var/log/messages
+	>> 실시간으로 확인 가능
+
+<클라이언트>
+systemctl status httpd
+	httpd 가 없다면?? 설치
+
+systemctl restart httpd
+systemctl restart rsyslog
+	>> 서버의 tail 에 새로운 log 메세지 올라옴
+
+------------------------------------------------------
+
+<서버>
+dnf install -y mariadb-server rsyslog-mysql
+
+cat /usr/share/doc/rsyslog/mysql-createDB.sql
+
+mysql -u root -p < /usr/share/doc/rsyslog/mysql-createDB.sql
+
+
+/// MariaDB ///
+use Syslog;
+grant all privileges on Syslog.* to 'rsyslog'@'localhost' identified by 'password';
+flush privileges;
+
+
+/// 리눅스메인 ///
+
+vi /etc/rsyslog.conf
+	> 46번째 줄에 추가
+	$ModLoad ommysql
+	$*.* :ommysql:127.0.0.1,Syslog,rsyslog,password
+
+
+firewall-cmd --permanent --add-port=3306/tcp
+firewall-cmd --reload
+
+systemctl restart rsyslog
+
+>> 마리아 db 들어가서 SytemEvents 테이블 확인해보기
+
+dnf install -y httpd php php-mysqli
+
+dnf install -y wget
+wget http://download.adiscon.com/loganalyzer/loganalyzer-4.1.13.tar.gz -P /tmp
+
+dnf install -y tar
+tar -xzvf /tmp/loganalyzer-4.1.13.tar.gz -C /tmp
+
+mkdir /var/www/html/loganalyzer
+cp -r /tmp/loganalyzer-4.1.13/src/* /var/www/html/loganalyzer
+cp /tmp/loganalyzer-4.1.13/contrib/configure.sh  /var/www/html/loganalyzer
+
+cd /var/www/html/loganalyzer
+bash configure.sh
+	>> config.php 생성됨
+
+systemctl status httpd
+	> 이거 활성화하고 방화벽 80포트, http 열어두기
+
+
+/// 윈도우 창///
+http://192.168.16.95/loganalyzer/
+step 3 까지 next
+step3 >
+Enable User Database >> Yes
+DBname : Syslog
+Table prefix : SystemEvents
+DB user : rsyslog
+db pw : password
+
+step 5
+username : loganalyzer 접속에 사용될 계정명 >>  admin
+pw : 1234
+
+step7
+Source Type : MYSQL Native
+DBname : Syslog
+Table prefix : SystemEvents
+DB user : rsyslog
+db pw : password
+
+step8
+	here 클릭
