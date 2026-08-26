@@ -1,0 +1,19 @@
+Ubuntu
+
+UbuntuServer (minimize) 선택
+
+쭉 진행
+
+<profile configuration>
+your name : ubuntu
+your servers name : userver
+pick a username : hth
+passwd : 1234
+confirm passwd : 1234
+
+<SSH configuration>
+install OpenSSH Server 체크
+
+---------------------------------
+
+
