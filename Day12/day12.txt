@@ -1,0 +1,151 @@
+create database library;
+
+use library;
+
+create table books ( id int auto_increment primary key,
+title varchar(100) not null,
+author varchar(50), 
+published_year int, 
+available boolean default true
+);
+
+insert into books
+
+insert into books (title, author, published_year, available) values ('title1', 'author1', 1919, true);
+insert into books (title, author, published_year, available) values ('title2', 'author2', 1943, true);
+insert into books (title, author, published_year, available) values ('title3', 'author3', 2026, false);
+
+
+select * from books order by published_year desc limit 1;
+	> order by 정렬, desc 내림차순, limit 하나만
+
+select * from books where title like '%data%';
+	> like 
+
+select * from books where title is not null;
+
+select count(*) as total_books from books;
+	>> as 별칭 , count 개수 세기
+
+select sum(published_year) as total_year from books;
+	>> sum 합계
+
+select avg(published_year) as avg_year from books;
+	>> avg 평균
+
+select max(published_year) as max_year from books;
+	>> max 최대
+
+select min(published_year) as old, max(published_year) as new from books;
+	>> min 최소, 쉼표를 기준으로 같이 쓸 수 있음
+
+
+---------------------------------
+
+ mysqldump -u root -p library > backup.sql
+	>> 백업하기
+
+mysqldump -u root -p --all-databases > all_backup.sql
+	>> 전부 백업
+
+ mysqldump -u root -p library books > table_backup.sql
+	>> 특정 부분만 백업
+
+----------------
+
+migration 방식
+비동기 : async
+반동기 : semi-sync
+동기 : sync
+
+<slave>
+maria-server 설치 , mariadb 실행
+
+mysql_secure_installation
+	>> 전부 y
+
+
+<master>
+
+firewall-cmd --permanent --add-port=3306/tcp
+firewall-cmd --reload
+
+==================================================
+  MariaDB Replication (Master - Slave) 설정 가이드
+==================================================
+
+--------------------------------------------------
+[1] MASTER 서버 설정
+--------------------------------------------------
+
+1. 로그 디렉토리 생성 및 권한 설정 (터미널)
+mkdir -p /var/log/mysql
+chown -R mysql:mysql /var/log/mysql
+chmod 755 /var/log/mysql
+firewall-cmd --permanent --add-port=3306/tcp
+firewall-cmd --reload
+
+
+2. 설정 파일 수정
+vi /etc/my.cnf.d/mariadb-server.cnf
+
+----- [mysqld] 아래에 추가 -----
+[mysqld]
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+expire_logs_days = 10
+max_binlog_size = 100M
+---------------------------------
+
+
+3. 마리아DB 재시작 및 Master 정보 확인
+systemctl restart mariadb
+mariadb -u root -p
+
+-- (MariaDB 접속 후 실행)
+GRANT REPLICATION SLAVE ON *.* TO 'slave_db'@'%' IDENTIFIED BY 'slave_password';
+FLUSH PRIVILEGES;
+
+-- File명과 Position 숫자 메모 필수!
+SHOW MASTER STATUS;
+
+
+
+--------------------------------------------------
+[2] SLAVE 서버 설정
+--------------------------------------------------
+1. 설정 파일 수정 (터미널)
+/vi /etc/my.cnf.d/mariadb-server.cnf
+
+----- [mysqld] 아래에 추가 -----
+[mysqld]
+server-id = 2
+---------------------------------
+
+
+2. 마리아DB 재시작 및 ID 확인
+systemctl restart mariadb
+mariadb -u root -p
+
+-- (MariaDB 접속 후 실행)
+SHOW VARIABLES LIKE 'server_id';
+
+
+3. Master 연동 및 복제 시작 (MariaDB 접속 상태)
+CHANGE MASTER TO
+  MASTER_HOST='192.168.16.80',
+  MASTER_USER='slave_db',
+  MASTER_PASSWORD='slave_password',
+  MASTER_PORT=3306,
+  MASTER_LOG_FILE='mysql-bin.000001',
+  MASTER_LOG_POS=328;
+	>> 마스터에서 나온 포지션값
+
+START SLAVE;
+
+
+4. 최종 동작 확인
+SHOW SLAVE STATUS;
+
+
+--------------------------------

@@ -1,0 +1,170 @@
+ubuntu
+
+============
+192.168.16.88
+192.168.16.79
+============
+
+sudo apt install -y iputils-ping
+
+-----------------------------------------------------------
+
+//수동 ip 고정하는 과정//
+
+ls /etc/netplan
+	>> 우분투의 네트워크 환경 파일
+
+sudo apt install -y vim
+
+sudo vi /etc/netplan/50-cloud-init.yaml
+===============================
+network:
+  version: 2
+  ethernets:
+    enp0s3:
+      dhcp4: no
+      addresses:
+        - 192.168.16.88/24		>> 본인 ip로!!
+      routes:
+        - to: default
+          via: 192.168.16.1
+      nameservers:
+        addresses:
+          - 168.126.63.1
+================================
+
+sudo netplan apply
+	>> 적용하기
+
+----------------------------------------------------------
+
+sudo passwd root
+
+su root
+	>> root 계정으로
+su hth
+	>> hth 계정으로
+
+https://www.percona.com/downloads/
+https://hub.docker.com/
+	> python , wordpress , kali
+
+-----------------------------------------------------------
+
+/// Docker 설치 준비 ///
+
+
+sudo apt update -y
+	>> 시스템의 패키지 목록을 최신 상태로 새로고침
+
+sudo apt install -y ca-certificates curl gnupg
+
+ ls /etc/apt
+	>> keyrings 디렉토리 확인
+
+sudo install -m 0755 -d /etc/apt/keyrings
+
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+ls /etc/apt/keyrings
+	> docker.gpg 있는지 확인
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu       "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+	>>  cat /etc/apt/sources.list.d/docker.list 여기에 잘 나오는지 확인한다
+
+sudo apt update -y
+	>> 저장소를 변경했으면 갱신해준다
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+------------------------------------------------------
+
+/// Docker 실행 ///
+
+sudo systemctl start docker
+
+sudo systemctl enable docker
+	>> 도커 실행 및 enable
+
+sudo docker run hello-world
+	>> 도커가 잘 실행됐나 확인해보기 >> Hello from Docker! 메세지 체크
+
+sudo curl -fsSL https://www.percona.com/get/pmm | sudo /bin/bash
+	>> pmm 다운받아서 실행
+	>> 계정과 비밀번호가 admin 으로 되어있음
+
+sudo docker images
+	>> 이미지 잘 다운 됐는지
+sudo docker ps
+	>> 이미지가 컨테이너로 잘 켜졌는지
+
+sudo docker rm [컨테이너 id]
+	>> 컨테이너 삭제하기
+
+>> https://192.168.16.88/ 로 접속하면 percona 페이지가 뜬다
+
+-------------------------------------------------------------
+
+/// Client 에서 도커 접속 ///
+192.168.16.79
+
+sudo wget https://repo.percona.com/apt/percona-release_latest.generic_all.deb
+	>> 컴퓨터로 설치 파일 받아오고
+
+sudo dpkg -i percona-release_latest.generic_all.deb
+	>> .deb 파일 실행하고
+
+sudo percona-release enable pmm3-client
+	>> PMM 버전 3 클라이언트 프로그램 다운로드 통로 활성화 >> 앱스토어 같은 느낌
+
+sudo apt update -y
+	>> 다운 했으니 업데이트
+
+sudo apt install -y pmm-client
+	>> 열어둔 통로로 설치
+
+sudo pmm-admin --version
+	>> 설치 잘 됐나 확인 >> -client 안에 -admin 이라는게 있음
+
+sudo pmm-admin config --server-insecure-tls --server-url=https://admin:admin@192.168.16.88:443
+	>> admin 계정 이름과 admin 비밀번호로 .88 서버로 연결한다
+
+sudo pmm-admin status
+	>> 상태 확인
+
+>> https://192.168.16.88/ 에서 Monitered Nodes 에서 숫자 올라간거 확인
+
+------------------------------------
+
+sudo apt install -y mariadb-server
+
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+sudo mysql_secure_installation
+	>> 보안설치
+
+// Maria DB 들어가서 //
+
+create user 'pmm'@'localhost' identified by 'pmm1234' with max_user_connections 10;
+	>> PMM 전용 계정 생성, 제한 설정
+
+grant select, process, replication client, reload on *.* to 'pmm'@'localhost';
+	>> 계정에 권한(조회 관련) 부여
+	
+flush privileges;
+
+// 리눅스 //
+
+sudo pmm-admin add mysql --username=pmm --password=pmm1234 --host=localhost --port=3306 --query-source=slowlog --environment=production MySQL-Primary
+	>> mariadb에서 만든 계정을 pmm-admin 을 통해서 mysql 모니터링 서비스 추가
+
+sudo pmm-admin status
+	>> 확인해보기
+
+>> https://192.168.16.88/ 에서 Monitored DB Instances 부분 mysql 숫자 체크
+
+
+

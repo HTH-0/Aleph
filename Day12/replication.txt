@@ -1,0 +1,37 @@
+Master 
+3306 허용
+
+vi /etc/my.cnf.d/mariadb-server.cnf
+mkdir /var/log/mysql
+chmod 777 /var/log/mysql
+
+[mysqld] 추가
+server-id=1
+log_bin= /var/log/mysql/mysql-bin.log
+expire_logs_days=10
+max_binlog_size= 100M
+
+grant replication slave on *.* to 'slave_db' @'%' identified by 'slave_password';
+show master status; -> 확인
+systemctl restart mariadb
+
+Slave
+vi /etc/my.cnf.d/mariadb-server.cnf
+server-id=2
+show variables like 'server_id'; -> id 확인
+
+Master 지정
+CHANGE MASTER TO MASTER_HOST = "192.168.16.21",   -> master ip
+MASTER_USER = "slave_db",
+MASTER_PASSWORD = "slave_password",
+MASTER_PORT = 3306,
+MASTER_LOG_FILE = "mysql-bin.000001", -> 확인 후 같이
+MASTER_LOG_POS = 384; -> 확인 후 같이
+
+start(stop/reset) slave;
+show slave status;
+
+systemctl restart mariadb
+start(stop/reset) slave;
+
+Master에서 db~데이터 생성 후 Slave에서 자동으로 복제되는지 확인
