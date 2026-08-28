@@ -1,0 +1,81 @@
+---------------------------------------------------
+
+//// Kali 리눅스 ////
+
+설치
+
+os : linux
+osversion : Debian
+harddisk : 30Gb
+
+설정창
+프로세서 : pae 체크, cpu 2개
+저장소 > IDE > kali 파일넣기
+usb, 오디오 없애기
+네트워크 : 어댑터에 브리지
+
+Graphical install
+한국어 다운
+
+네트워크 설정 안되면
+	>> 인터넷 네트워크 >> dhcp 수동 > 자동으로
+
+
+계정명 :kali
+비밀번호 :1234
+
+파티션 : 자동 - 디스크 전체 사용
+	> 모두 한 파티션
+
+바뀐점을 디스크에 쓸까? > 예
+
+부트로더 설치 > /dec/sda ... 선택
+
+----------------------------------------------
+
+=============================
+장치  > 클립보드 공유 > 양방향
+	>> 복붙이 가능하다
+============================
+
+<<터미널1>>
+
+sudo update -y
+
+sudo upgrade -y
+
+
+<<터미널2>>
+
+----------------------------------------------
+sudo apt install -y fcitx-hangul
+	>> 에러
+killall apt apt-get
+
+sudo ls /var/lib/apt/lists
+	>> lock 확인
+
+sudo rm -f /var/lib/apt/lists/lock
+
+sudo rm -f /var/lib/apt/archives/lock
+
+sudo rm -f /var/lib/apt/lists
+	
+	>> 다 해도 안됐음 >> 패키지 파일이 바뀌었다고 함
+	>> 폐기
+--------------------------------------------
+
+sudo wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+	>> 크롬 설치 파일 받아오기
+
+sudo apt install ./google.com/linux/direct/google-chrome-stable_current_amd64.deb
+	>> 크롬 설치
+
+sudo apt install -y fcitx-ui-classic
+sudo apt install -y fcitx-libs
+sudo apt install -y fonts-nanum*
+	>> 한글 설치( 파일이름 바뀐거 )
+
+
+sudo vi /etc/network/interfaces
+	>> 수동으로 네트워크 설정 하고싶다면

@@ -1,0 +1,79 @@
+sudo free -m
+	> 시스템의 메모리(RAM) 및 스와프(Swap) 사용량 >> 메가바이트
+
+sudo free -g
+	> 시스템의 메모리(RAM) 및 스와프(Swap) 사용량 >> 기가바이트
+
+sudo sysctl
+	> 커널(Kernel)의 매개변수를 조회하거나 실시간으로 변경
+
+sudo sysctl -a | grep swap
+	>> 현재 커널 매개변수 중 swap 필터링
+
+sudo sysctl -w vm.swappiness=40
+	> 40으로 즉시 변경
+	>> 영구적이지 않음
+
+sudo vi /etc/sysctl.conf
+=====================
+vm.swappiness = 40
+	>> 추가 기입하면 영구 변환
+=====================
+
+cat /proc/meminfo
+
+grep MemTotal /proc/meminfo
+	>> grep 를 앞에 둬도 된다  == cat /proc/meminfo | grep MemTotal
+
+sudo cat /proc/version
+
+sudo cat /proc/cpuinfo
+
+/// mariaDB ///
+
+create database test;
+
+create user 'test'@'localhost' identified by '1234';
+	>> test 계정 (로컬에서만 접속가능) 생성
+
+create user 'test'@'%' identified by '1234';
+	>> test 계정 (모든 ip 에서 접속가능) 생성
+
+create user 'test'@'192.168.16.100' identified by '1234';
+	>> 특정 ip에서 접속 가능한
+	>> 계속 test 계정이 추가되는거
+
+use mysql;
+
+select host, user, password from user;
+
+drop user test;
+	>> 호스트 명시 없이 test 사용자 삭제 시도
+
+select host, user, password from user;
+
+drop user test@localhost;
+	>> test 계정(로컬 전용) 삭제
+
+create user 'hong'@'%' identified by '1234';
+	>> hong 계정 생성
+
+grant all privileges on test.* to 'hong'@'%';
+	>> test DB의 모든 권한 부여
+
+show grants;
+
+show grants for 'hong'@'%';
+
+revoke all privileges on test.* from 'hong'@'%';
+	>> 권한 제거
+
+create view v_books as select name, ava from books;
+
+drop view if exists v_books;
+
+
+-------------------------------------------------------
+
+ 
+
