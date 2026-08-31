@@ -1,0 +1,44 @@
+sudo docker pull ubuntu:bionic
+
+sudo docker images
+
+----------------
+sudo docker run -it ubuntu:bionic bash
+	>> 컨테이너 생성 및 접속
+	>> root@7c5a22a2066d 이렇게 바뀜
+
+apt update -y
+
+apt install -y git
+
+git --version
+
+cat /etc/os-release
+	>> OS 정보 확인
+
+exit
+---------------
+
+sudo git --version
+	>> 호스트랑은 다른 환경임을 확인
+
+sudo docker images
+
+sudo docker ps
+
+sudo docker rmi hello-world
+
+
+sudo docker ps -a
+	>> 아직 남아있음
+
+sudo docker rm 82912e6c7b85
+	>> 해당되는 container ID 를 적기
+
+sudo docker rmi hello-world
+
+--------------------------------
+
+sudo ls /etc/apt/sources.list.d
+
+sudo cat /etc/apt/sources.list.d/ubuntu.sources

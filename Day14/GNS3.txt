@@ -1,0 +1,102 @@
+GNS3
+
+환경설정
+Dynamips - IOS routers
+	> C2691-AD
+	WIC modules
+		> 0번에 WIC-2T
+
+	> C3660-JK
+	This is an EtherSwitch >> L3 라우터
+
+
+
+R1(config)#ip http server
+R1(config)#enable password 1234
+R1(config)#line vty 0 4
+R1(config-line)#login
+
+R4(config)#ip http server
+R4(config)#enable password 1234
+R4(config)#line vty 0 4
+R4(config-line)#password 1234
+R4(config-line)#login
+
+R4#telnet 10.10.10.1
+	>> 접속가능
+
+R4#telnet 10.10.10.1 80
+	>> Trying 10.10.10.1, 80 ... Open : 접속은됨, 웹페이지가 없는거
+
+R4#telnet 20.20.20.2 80
+	>> % Connection refused by remote host : 연결 안됨
+
+
+ip access-list  extended tcpes
+permit ospf host 20.20.20.3 any
+permit tcp any any established
+	>> RACL 과 유사한 효과
+
+
+R2(config-if)#ip access-group tcpes in
+
+R2(config-ext-nacl)#permit tcp any any reflect racltest
+R2(config-ext-nacl)#permit udp any any reflect racltest
+R2(config-ext-nacl)#permit icmp any any reflect racltest
+R2(config-ext-nacl)#permit ip any any
+
+R2(config)#ip access-list extended test
+R2(config-ext-nacl)#permit ospf host 20.20.20.3 any
+R2(config-ext-nacl)#evaluate racltest
+
+R2(config)#in f0/1
+R2(config-if)#ip access-group racl out
+R2(config-if)#ip access-group test in
+
+
+R1#ping 30.30.30.4
+R1#telnet 30.30.30.4 80
+	>> 됨
+
+R4#ping 10.10.10.1
+R4#telnet 10.10.10.1
+	>> 안됨
+
+R2#show access-list
+
+R2(config-line)#login local
+R2(config-line)#autocommand access-enable host timeout 10
+
+R2(config)#no ip access-list extended racl
+R2(config)#no ip access-list extended test
+R2(config)#in f0/1
+R2(config-if)#no ip access-group racl out
+R2(config-if)#no ip access-group test in
+
+
+R2#telnet 20.20.20.2
+Username: hth
+Password:1234
+
+R2(config)#ip access-list extended dacl
+R2(config-ext-nacl)#permit ospf host 20.20.20.3 any
+R2(config-ext-nacl)#permit tcp host 20.20.20.2 eq telnet
+R2(config-ext-nacl)#permit tcp any host 20.20.20.2 eq telnet
+R2(config-ext-nacl)#dynamic  DACL permit ip any any
+R2(config-if)#do sh access-list
+
+R4#telnet 10.10.10.1
+	>> 안됨
+
+R4#telnet 20.20.20.2
+Username: hth
+Password:1234
+
+R4#ping 10.10.10.1
+	>> 됨
+
+
+R2(config)#no ip access-list extended dacl
+R2(config-if)#no ip access-group dacl in
+
+
