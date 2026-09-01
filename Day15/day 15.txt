@@ -1,0 +1,178 @@
+/// GNS3 ///
+
+
+ZFW란?
+	>> 내부에서 나간 트래픽 허용, 내부에서 나갔던 트래픽 돌아오는 것 허용
+	>> 하지만 외부에서 먼저 들어오는 트래픽 차단
+
+R2(config)#zone security inside
+
+R2(config)#zone security outside
+	>R2에 내부신뢰망, 외부 비신뢰망 선언
+
+R2(config)#in fa0/0
+R2(config-if)#zone-member security inside
+
+R2(config)#in fa0/1
+R2(config-if)#zone-member security outside
+	> 각 인터페이스에 zone 할당
+	> FW에서는 인터페이스가 특정 보안 존에 소속되는 순간, 서로 다른 존 간의 모든 트래픽이 기본적으로 전면 차단(Default Deny)
+
+R2#show zone security
+
+R4#ping 10.10.10.1
+	>> 안됨
+R4#ping 20.20.20.3
+	>> 통신 됨
+
+R2(config)#zone-pair security inout source inside destination outside
+	>> zone pair 선언 >> 출발지를 inside, 목적지를 outside 설정 : 통로 이름표 설정
+
+R2(config)#ip access-list extended acltest
+
+R2(config-ext-nacl)#permit ip any any
+	>> 트래픽 정의를 위한 ACL 작성 : 모든 트래픽을 감시하게 한다
+
+R2(config)#class-map type inspect classtest
+	>> 방화벽 검사(type inspect) 용도의 classtest라는 클래스 맵을 만들기
+
+R2(config-cmap)#match access-group name acltest
+	>>  acltest ACL 조건에 맞는 트래픽을 이 클래스로 묶기
+	>> Inside에서 Outside로 향하는 모든 IP 트래픽이 classtest라는 그룹으로 분류
+
+R2(config)#policy-map type inspect policytest
+	>> Policy-map (정책모음) 만들기
+
+R2(config-pmap)#class type inspect classtest
+	>> 클래스 지정
+
+R2(config-pmap-c)#inspect
+	>> 해당 클래스에 상태기반검사 지정
+
+R2(config-sec-zone-pair)#service-policy type inspect policytest
+	>> 정책 최종 바인딩
+
+R2#show class-map
+
+R2#show class-map type inspect
+
+R2#show policy-map type inspect
+
+-----------------------------------------------------------------------------------
+
+ASAv
+	>> Security Lv 기준으로 낮은곳 -> 높은곳 deny  높->낮 permit
+	>> 높은곳 > 낮은곳의 icmp 는 예외적으로 차단
+
+
+preferences > gns3 vm > download here
+가상머신 불러오기
+enable the gns3 vm 체크
+apply
+	>> vm 실행됨
+
+security device >> new template 
+
+<<PC>>
+ip 192.168.100.100 255.255.255.0 192.168.100.254
+
+<<Webterm>>
+root@webterm-1:~# ip addr add 192.168.100.200/24 dev eth0     
+root@webterm-1:~# ip link set eth0 up
+root@webterm-1:~# ip route add default via 192.168.100.254
+root@webterm-1:~# ifconfig
+
+root@webterm-2:~# ip addr add 192.168.200.200/24 dev eth0
+root@webterm-2:~# ip link set eth0 up
+root@webterm-2:~# ip route add default via 192.168.200.254
+root@webterm-2:~# ifconfig
+
+
+R2(config)#ip http server
+	>> http://192.168.200.254/ 접근 가능
+
+R2(config)#ip http secure-server
+	>> https://192.168.200.254/ 접근가능
+
+
+방화벽 (ASAv)<<<<<<<<<<<<<<<<<<<<<<<<
+
+show firewall
+	>> 방화벽모드 확인가능
+
+show version
+
+
+in gi0/0
+
+ip address 1.1.1.2 255.255.255.0
+
+no shutdown
+
+nameif inside
+	>> inside 지정 > 디폴트 100
+
+security-level 100  : 수동으로 100로 설정하기
+
+
+in gi0/1
+
+ip address 2.2.2.2 255.255.255.0
+
+no shutdown
+
+nameif outside
+	>> inside 말고 나머지는 디폴트 0
+
+router ospf 1
+
+network 1.1.1.0 255.255.255.0 area 0
+	>> asav 장비에는 wildcard 아니라 subnetmask
+
+network 2.2.2.0 255.255.255.0 area 0
+
+write memory
+
+show run
+show run router
+show run interface
+show route
+
+enable password 1234
+passwd 1234
+http server enable
+	>> https 도 가능
+username hth password 1234
+aaa authentication ssh console LOCAL
+crypto key generate rsa modulus 1024
+	> yes
+
+http 192.168.100.200 255.255.255.255 inside
+	>> 이제 웹사이트 접속 됨
+http 192.168.100.200 255.255.255.255 outside
+
+no http 192.168.100.200 255.255.255.255 outside
+
+telnet 192.168.100.0 255.255.255.0 inside
+
+http 192.168.200.100 255.255.255.255 outside
+
+ssh 192.168.200.0 255.255.255.0 outside
+
+ssh 1.1.1.1 255.255.255.255 inside
+
+ssh 192.168.200.0 255.255.255.255 inside
+
+R1 : ssh -L hth 1.1.1.2
+
+
+access-list httpoutside extended permit tcp host 192.168.200.100 host 1.1.1.1 eq www
+
+access-group httpoutside in interface outside
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+자격증, 수료 이런건 
+날짜 고정 << 얘네들은 날짜 기입하면 Dday나와서

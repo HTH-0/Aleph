@@ -1,0 +1,414 @@
+Wireshark
+10:34===========================
+ASAv-FW (새 파일 생성)
+edit-preferences
+>GNS3 VM 
+Virtual engline : VirtualBox 선택 + Downloaded here 클릭
+	if) VirtualBox 외에 다른것으로 진행하려면 해당 파일 선택 이후 Download 진행해야함
+Download 파일 압축 해제 진행 
+>> GNS3 VM.ova 파일 생성됨.(가상시스템 내보내기 시 나오던 파일)
+virtual box 실행 이후 가상시스템 가져오기
+mac 주소 정책 : 모든 네트워크 어댑터의 새 mac 주소 생성으로 변경
+
+Settings -> Refresh click 이후 GNS3 VM 확인 가능
+최상단 Enable the GNS3 VM check
+Apply (download 진행 이후) OK
+
+Virtual box서 GNS3 VM 자동 실행되는 것이 확인됨. (종료하지 말것)
++ Servers Summary에 GNS3 VM (GNS3 VM) Cpu 생성됨 (green check 필수)
+
+11:01===========================
+Virtual Box 자동실행된 GNS3 VM 확인 먼저 진행
+KVM support available : True여야함 / IP : 192.168.56.101 port : 80
+False인 경우 > cpu 가상화기능을 지원하지 않기에, 방화벽 관련 진행이 불가능함
+False : 인경우 virtual box 실행 종료
+설정창 : 시스템 프로세서 (PAE/NX + 하나 더 있는거) 둘다 체크하기
+이후 시작을 하고  Servers Summary green으로 나오는지 확인 이후
+KVM support available : True 확인 -> 여전히 False 확인됨
+
+GNS3 가서 preference GNS3VM 이동이후
+Enable check 해제, VMware workstation / player 로 다시 다운 및 진행
+FTP 서버서 VMware-player 17. 설치
+import로 진행(가져오기 마냥)
+================================
+보안장비 추가
+ASAv
+Security devices +
+New Template click
+Install an appliance from the GNS3 server(recommended) check) Next
+	>GNS3 장점 : 여러 회사 제품 사용가능 / 단 부하가 생길 가능성이 높음
+Appliance Name
+Firewalls > Cisco ASAv  (next) (next) (next)
+Required Files : ASAv version 9.9.2 (asav992.qcow2)
+	>FTP 서버서 asav992.qcow2 들고오는것으로 진행예정 >import
+ASAv version 0.0.2 (Missing -> ready to install) (next)
+Usage: There is no default password and enable password. A default configuration is present.
+(finixh)
+
+End device
+New template
+Install an appliance from the GNS3 server(recommended) check) Next
+Appliance name
+Guests > webterm install (next) (finish) >> End devices에 webterm 생성됨.
+처음 webterm을 topology field에 drag시 pulling 시간 걸림
+(Success pulling image gns3/webterm:latest)
+================================(topology 구성 시작)
+PC1> ip 192.168.100.100 255.255.255.0 192.168.100.254    >>>>>>PC 관련 설정
+Checking for duplicate address...
+PC1 : 192.168.100.100 255.255.255.0 gateway 192.168.100.254
+PC1> show (설정 확인)       [ pc의 전원을 끄고 킬 경우 정보 바뀜 *******save 필요함]
+NAME   IP/MASK              GATEWAY           MAC                LPORT  RHOST:PORT
+PC1    192.168.100.100/24   192.168.100.254   00:50:79:66:68:00  10020  127.0.0.1:10021
+       fe80::250:79ff:fe66:6800/64
+PC1> save
+Saving startup configuration to startup.vpc	.  done
+
+PC2> ip 192.168.200.100 255.255.255.0 192.168.200.254
+Checking for duplicate address...
+PC2 : 192.168.200.100 255.255.255.0 gateway 192.168.200.254
+PC2> show
+NAME   IP/MASK              GATEWAY           MAC                LPORT  RHOST:PORT
+PC2    192.168.200.100/24   192.168.200.254   00:50:79:66:68:01  10022  127.0.0.1:10023
+       fe80::250:79ff:fe66:6801/64
+PC2> save
+Saving startup configuration to startup.vpc	.  done
+
+12:01============
+Webterm
+terminal 들어가서
+root@webterm-1:~# ip addr add 192.168.100.200/24 dev eth0
+root@webterm-1:~# ip link set eth0 up
+root@webterm-1:~# ip route add default via 192.168.100.254
+root@webterm-1:~# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.100.200  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::42:56ff:fe44:d900  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:56:44:d9:00  txqueuelen 1000  (Ethernet)
+        RX packets 3  bytes 192 (192.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 14  bytes 1076 (1.0 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 460  bytes 40116 (39.1 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 460  bytes 40116 (39.1 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+
+root@webterm-2:~# ip addr add 192.168.200.200/24 dev eth0
+root@webterm-2:~# ip link set eth0 up 
+root@webterm-2:~# ip route add default via 192.168.200.254
+root@webterm-2:~# ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500				>up확인
+        inet 192.168.200.200  netmask 255.255.255.0  broadcast 0.0.0.0
+        inet6 fe80::42:4fff:fe79:d900  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:4f:79:d9:00  txqueuelen 1000  (Ethernet)
+        RX packets 3  bytes 192 (192.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 14  bytes 1076 (1.0 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1000  (Local Loopback)
+        RX packets 500  bytes 43392 (42.3 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 500  bytes 43392 (42.3 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+
+====
+Router별 ip/int/ospf 1 routing / net 진행====>
+R2#conf t
+R2(config)#int fa0/0
+R2(config-if)#ip address 192.168.200.254 255.255.255.0
+R2(config-if)#no shut
+R2(config-if)#exit
+R2(config)#int fa0/1
+R2(config-if)#ip address 2.2.2.1 255.255.255.0
+R2(config-if)#no shutdown
+R2(config-if)#exit
+R2(config)#router ospf 1
+R2(config-router)#net 2.2.2.0 0.0.0.255 area 0
+R2(config-router)#net 192.168.200.0 0.0.0.255 area 0
+R2(config-router)#exit
+R2(config)#do show ip route
+Gateway of last resort is not set
+     2.0.0.0/24 is subnetted, 1 subnets
+C       2.2.2.0 is directly connected, FastEthernet0/1
+C    192.168.200.0/24 is directly connected, FastEthernet0/0
+R2(config)#exit
+R2#wr
+============================================================================
+R2(config)#ip http server
+R2(config)#ip http secure-server		>HTTP와 HTTPS 웹 관리가 모두 활성화
+% Generating 1024 bit RSA keys, keys will be non-exportable...[OK]
+R2(config)#
+*Mar  1 00:31:12.627: %SSH-5-ENABLED: SSH 1.99 has been enabled
+*Mar  1 00:31:12.999: %PKI-4-NOAUTOSAVE: Configuration was modified.  Issue "write memory" to save new certificate
+R2(config)#do wr
+Building configuration...
+
+webterm 2
+mozila fire fox ->  http://192.168.200.254
+
+
+==============12:30 firewall
+비번 없음(초기 설정 기준)
+enable
+Password : 없음 -> y 이후 엔터
+ASAFW# show firewall
+firewall mode : router
+
+#show version
+
+conf t
+config)# int gi 0/0
+config-if)#ip address 1.1.1.2 255.255.255.0
+no shutdown
+nameif inside		> zone 설정
+INFO : Security level for "inside" set to 100 by default.
+security -level 100
+exit
+
+int gi0/1
+ip addr 2.2.2.2 255.255.255.0
+no shut
+nameif outside
+INFO : Security level for "outside" set to 0 by default.
+exit
+router ospf 1
+config-router)# network 1.1.1.0 255.255.255.0 area 0				>firewall 차이점  >>subnet 기존엔 /24의 경우 0.0.0.255 firewall은 반대로
+network 2.2.2.0 255.255.255.0 area 0								> firewall 차이점
+Config-router)에서 write memory 가능
+config-router)#show run router
+router ospf 1
+network 1.1.1.0 255.255.255.0 area 0
+network 2.2.2.0 255.255.255.0 area 0
+log-adj-changes !
+exit
+원하는거 검색하고 싶을떄 (Config-router)#show run (     )
+
+Config-router)#show route -> 방화벽에서 ip route 확인 가능  12:45 kakaotalk image
+
+Config-router)# ping test 진행
+================================
+WEbterm 1
+mozila firefox
+http://192.168.200.254 web 접속 확인 가능
+terminal서
+root@webterm-1:~# ping 192.168.200.254
+PING 192.168.200.254 (192.168.200.254) 56(84) bytes of data. (icmp ping 안됨 확인)
+
+PC2> ping 192.168.100.100
+192.168.100.100 icmp_seq=1 timeout
+192.168.100.100 icmp_seq=2 timeout
+192.168.100.100 icmp_seq=3 timeout
+192.168.100.100 icmp_seq=4 timeout
+192.168.100.100 icmp_seq=5 timeout
+
+보안레벨 높은쪽에서 낮은쪽으로의 접속은 가능하지만, icmp는 제외
+보안레벨이 낮은쪽에서 높은쪽으로의 접속은 모두 차단됨을 확인 가능함
+
+14:25=================================
+목적지를 방화벽으로 기준을 잡았을때, 설정하는 법
+방화벽쪽 license state is Unlicensed. -> 등록 안했으니까 정상
+Ciscoasa(config)# enable password 1234 			>enable 관리자 비번
+Ciscoasa(config)#passwd 1234					>원격접속시 비번
+Ciscoasa(config)#http server enable				>http, https 동시 허용(router에선 각각 따로지정했지만 방화벽은 같이 가능함)
+Ciscoasa(config)#username cloudy password 1234
+
+Ciscoasa(config)#?
+aaa Enable, disable, or view user authentication, authorization and accouting
+
+Ciscoasa(config)#aaa authentication ssh console LOCAL
+Ciscoasa(config)# crypto key generate rsa modulus 1024
+WARNING : You have a RSA keypair already definded named <Default>
+Do you really want to replace them? [yes/no]: yes 진행
+
+======webterm 1 firefox 실행 (mozila firefox)
+1.1.1.2 접속 시도 : Unable to connect
+Browse 닫고 terminal ping 확인
+root@webterm-1:~# ping 1.1.1.2
+PING 1.1.1.2 (1.1.1.2) 56(84) bytes of data.
+64 bytes from 1.1.1.2: icmp_seq=1 ttl=254 time=30.7 ms
+64 bytes from 1.1.1.2: icmp_seq=2 ttl=254 time=21.9 ms
+^C
+--- 1.1.1.2 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 21.921/26.311/30.702/4.390 ms
+
+>>  접속을 제어하기 위해 추가 설정할 것이 있음 : http 접속 허용원함 -> 방화벽 추가 설정
+
+방화벽
+Ciscoasa(config)#http 192.168.100.200 255.255.255.255 inside				>255.255.255.255(본인)
+
+====webterm 1 firefox 재 실행 1.1.1.2 접속 시도
+Warninig: Potential Security Risk Ahead		>>고급 : 접속 시도
+	>> Cisco ASDM 7.9(2) 1.1.1.2/admin/public/index.html
+
+==========
+방화벽 
+Ciscoasa(config)#http 192.168.100.200 255.255.255.255 outside
+
+webterm 1 firefox 실행 이후 2.2.2.2 접속 시도
+
+>> 방화벽 설정을 해도 접속 안됨
+
+
+========
+방화벽 
+잘못된 설정 지우려면 no 앞에 붙이는거 기존과 동일
+Ciscoasa(config)#no http 192.168.100.200 255.255.255.255 outside
+단일이 아니라, 100.0대역대를 출발점으로 잡을때
+Ciscoasa(config)#telnet 192.168.100.0 255.255.255.0 inside
+Ciscoasa(config)#ssh 192.168.100.0 255.255.255.0 inside
+Ciscoasa(config)#http 192.168.200.200 255.255.255.255 outside
+
+====webterm 2 실행
+root@webterm-2:~# ping 2.2.2.2 
+PING 2.2.2.2 (2.2.2.2) 56(84) bytes of data.
+64 bytes from 2.2.2.2: icmp_seq=1 ttl=254 time=20.4 ms
+64 bytes from 2.2.2.2: icmp_seq=2 ttl=254 time=16.4 ms
+64 bytes from 2.2.2.2: icmp_seq=3 ttl=254 time=20.6 ms
+^C --- 2.2.2.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2002ms
+rtt min/avg/max/mdev = 16.405/19.153/20.649/1.946 ms
+
+======방화벽
+Ciscoasa(config)#ssh 192.168.200.0 255.255.255.0 outside >>대역대로 제공해보기
+Ciscoasa(config)#ssh 1.1.1.1 255.255.255.255 inside
+
+
+router inside zone으로 이동
+R1#ssh -L cloudy 1.1.1.2
+Password: 1234
+User cloudy logged in to ciscoasa
+Logins over the last 1 days: 1.
+Failed logins since the last login: 0.
+Type help or '?' for a list of available commands.
+ciscoasa>
+
+15:04============
+방화벽
+Ciscoasa(config)#http 192.168.200.200 255.255.255.255 outside 해당 -> http, https 둘다 허용
+Webeterm 2 실행 firefox(https://2.2.2.2 접속 시도)
+-> Warning : Potential security (일단 접속 가능함 확인됨)
+
+>>>> 같은 zone 에 해당하는것은 접속이 되지만, in->out / out->in 이 되는것은 아님
+>>zone이 다른 곳에 관해서 어떻게 필터링을 진행할지 (방화벽 ACL에 해당되는 부분)
+
+외부에서 R1으로 http접속 가능하게 설정해보는 상황(15:09)=====================
+webterm 2 (1.1.1.1 접속 시도)
+보안레벨이 낮은곳에서 높은 곳 시도 막힘
+
+방화벽 terminal
+Ciscoasa(config)#access-list ? (ACL 정책 이름 넣는 것을 의미)
+Ciscoasa(config)#access-list httpoutside extended ?
+
+Ciscoasa(config)#access-list httpoutside extended permit tcp host 192.168.200.200 host 1.1.1.1 eq www
+Ciscoasa(config)#access-group httpoutside in interface outside 
+
+Ciscoasa(config)#show run access-list
+access-list httpoutside extended permit tcp host 192.168.200.200 host 1.1.1.1 eq www
+
+Router1=======================
+R1(config)#ip http server
+
+
+Webterm2 (firefox) http://1.1.1.1 접속 시도 성공
+
+15:28====
+방화벽 terminal
+R2 (2.2.2.1) -> R1 telnet 접속 가능케 하고 싶음
+ACL 설정을 하기 전에 R2에 들어가서, R1에는 telnet 접속을 위한 기본적인 설정이 되어있어야함
+R1 : show run vty 0 4 설정 필요함
+
+R1(config)#enable password 1234
+R1(config)#line vty 0 4
+R1(config-line)#password 1234
+R1(config-line)#login
+	>>>>>>>> 원격 접속 가능하게 만듬
+
+R2#telnet 1.1.1.1
+Trying 1.1.1.1 ...
+% Connection timed out; remote host not responding 	>여전히 접속 안됨
+
+방화벽 terminal
+Ciscoasa(config)#access-list httpoutside extended permit tcp host 2.2.2.1 host 1.1.1.1 eq telnet (eq 23도 가능)
+ httpoutside 동일한 name으로 지정했기에, Ciscoasa(config)#access-group httpoutside in interface outside 생략 진행
+
+R2#telnet 1.1.1.1
+Trying 1.1.1.1 ... Open
+User Access Verification
+Password: 1234
+R1>										>접속 허용 확인됨
+
+보안레벨이 높은쪽에서 낮은 쪽으로 모든 통신은 가능한데, 단 icmp 패킷에 관련해서는 안되고 있음.
+if pc1 -> pc2 시도시 : 보안레벨이 높기에 낮은쪽으로 가는 트래픽은 문제 없는데, pc2에서 pc 1로 ping 하는것은 안되고 있음 gig0/1 in 방향으로 설정 필요함
+
+PC1> ping 192.168.200.100
+192.168.200.100 icmp_seq=1 timeout
+192.168.200.100 icmp_seq=2 timeout
+192.168.200.100 icmp_seq=3 timeout
+192.168.200.100 icmp_seq=4 timeout
+192.168.200.100 icmp_seq=5 timeout
+
+방화벽 terminal==
+Ciscoasa(config)#access-list httpoutside extended permit icmp any any
+>> httpoutside 동일한 name으로 지정했기에, Ciscoasa(config)#access-group httpoutside in interface outside 생략 진행
+
+PC1> ping 192.168.200.100					ping 가는거 확인 됨
+84 bytes from 192.168.200.100 icmp_seq=1 ttl=62 time=35.810 ms
+84 bytes from 192.168.200.100 icmp_seq=2 ttl=62 time=39.768 ms
+84 bytes from 192.168.200.100 icmp_seq=3 ttl=62 time=39.421 ms
+
+
+모든 트래픽(ping 포함)  보안 레벨 낮은쪽에서 높은쪽으로 이동은 불가능 , 방화벽 내에서 ACL 설정 필요함
+접속 제어 관련 -> 설정할때 zone 연결되어 있는 부분만 가능  PC1-R1-gi0/0-FW -gi0/1 -R2-PC2
+>> pc 1-> pc 2 원할때 gi0/0 쪽에 설정해야함
+
+
+15:43 kakaotalk image ? 관련 2장 명령어 설명 (Access-list 뒤에 붙는 ? 관련)
+
+15:47 time range 설정관련 ===
+
+Ciscoasa(config)#time-range testime
+Ciscoasa(config-time-range)periodic weekdays 09:00 to 18:00 -> ACL 적용 시간 설정만 해둔거 (적용안함)
+Ciscoasa(config-time-range)exit
+Ciscoasa(config)#access-list httpoutside extended permit tcp host 2.2.2.1 host 1.1.1.1 eq telnet time-range 하면 범위 적용 될거 같음
+
+====방화벽 ACL 설정 관련 끝
+목요일 pfSense
+16:32===
+terminal 작성 도중  command가 분리되어 입력될 때
+Router 우클릭 Auto-idle pc 
+GNS3에서 실제 Cisco IOS를 에뮬레이션할 때 라우터의 CPU 사용량을 줄이기 위한 설정
+라우터가 아무것도 안 하고 있을 때 CPU를 계속 잡아먹지 않도록 최적화하는 기능
+
+
+과제
+200.200(web) -> 100.100 ping 가능하게
+
+
+100.200(web)-> 2.2.2.1 http 접속 불가능하게
+100.200(web) -> 2.2.2.1 http 접속 가능 확인
+-> 방화벽 레벨 높은쪽-> 낮은쪽 이니까 왠만해서 넘어감
+inside access-list 설정 필요
+
+
+
+
+root@webterm-2:~# ping 192.168.100.100
+PING 192.168.100.100 (192.168.100.100) 56(84) bytes of data.
+64 bytes from 192.168.100.100: icmp_seq=1 ttl=62 time=3038 ms
+64 bytes from 192.168.100.100: icmp_seq=2 ttl=62 time=2025 ms
+64 bytes from 192.168.100.100: icmp_seq=3 ttl=62 time=1011 ms
+애초에 수업때 Ciscoasa(config)#access-list httpoutside extended permit icmp any any 진행함
+Ciscoasa(config)#access-group httpoutside in interface outside
+
+ICMP를 허용하는 규칙을 httpoutside라는 이름으로 만들겠다
+"그 규칙을 outside로 들어오는 트래픽에 적용하겠다
