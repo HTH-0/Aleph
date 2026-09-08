@@ -1,0 +1,51 @@
+z > Z
+bz > j
+gz > z
+xz > J
+
+lp		lpr
+lpstat		lpq
+cancel	lprm
+
+
+
+SIGHUP	1번	(터미널 연결 끊김, 데몬 재시작)
+SIGINT	2번	[ctrl c] (키보드 인터럽트, 프로세스 강제 종료)
+SIGQUIT	3번	[ctrl \] (프로세스 종료 및 코어 덤프)
+SIGKILL	9번	(강제 종료, 무시/포착 불가)
+SIGTERM	15번	(정상 종료, kill 명령어 기본값)
+SIGSTOP	19번	(프로세스 일시 정지, 명령어로만 전송 가능)
+SIGTSTP	20번	[ctrl z] (키보드 일시 정지, 백그라운드 전환 대기)
+
+ctrl d	EOF (입력 끝, 쉘 종료/로그아웃)
+ctrl a	입력 커서 맨 앞으로 이동
+ctrl e	입력 커서 맨 뒤로 이동
+
+bash 
+리눅스 표준(기본) 셸 / GNU 프로젝트 / 브라이언 폭스
+ksh 
+데이비드 콘 (AT&T 벨 연구소) / 명령어 편집 기능 강화 / Bourne 셸 기반 상위 호환
+tcsh 
+C 셸(csh) 확장판 / 켄 그리어 / 명령어 자동 완성, 강력한 히스토리 편집
+dash 
+매우 가볍고 빠름 /  데비안/우분투의 기본 시스템 / 셸 (/bin/sh) POSIX 표준 준수
+
+[리눅스마스터 2급 데스크톱 환경 및 주요 구성요소]
+
+GNOME : 라이브러리 GTK+ / 윈도 매니저 mutter(3버전), metacity(2버전) / 파일 탐색기 Nautilus / 이미지 편집기 GIMP / 뷰어 eog / 멀티미디어 totem
+KDE : 라이브러리 QT / 윈도 매니저 kwin / 파일 관리자 dolphin / 뷰어 gwenview
+
+
+/etc/fstab
+1번 - 장 (장치명): 어떤 디스크/장치인지 (/dev/sda1 또는 UUID)
+2번 - 마 (마운트 포인트): 어디에 연결할 것인지 (/, /home) 
+3번 - 파 (파일시스템 종류): 어떤 형식인지 (ext4, xfs, swap)
+4번 - 옵 (마운트 옵션): 어떻게 작동시킬 것인지 (defaults, ro, noexec)
+5번 - 덤 (덤프 백업 여부): 백업할 것인지 (0 또는 1)
+6번 - 체 (체크/무결성 검사 순서): 부팅 시 파일시스템을 검사할 것인지 (0, 1, 2)
+
+
+~/.bash_profile: 최초 로그인 시 환경변수($PATH 등) 설정
+~/.bashrc: 터미널 창을 열 때마다 적용되는 앨리어스(alias) 및 개인 설정
+~/.bash_history: 입력했던 명령어 기록 저장
+~/.bash_logout: 로그아웃 시 실행되는 마무리 작업 스크립트
