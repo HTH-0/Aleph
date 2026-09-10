@@ -3,9 +3,12 @@ bz > j
 gz > z
 xz > J
 
+
+
 lp		lpr
 lpstat		lpq
-cancel	lprm
+cancel		lprm
+
 
 
 
@@ -21,6 +24,8 @@ ctrl d	EOF (입력 끝, 쉘 종료/로그아웃)
 ctrl a	입력 커서 맨 앞으로 이동
 ctrl e	입력 커서 맨 뒤로 이동
 
+
+
 bash 
 리눅스 표준(기본) 셸 / GNU 프로젝트 / 브라이언 폭스
 ksh 
@@ -30,7 +35,7 @@ C 셸(csh) 확장판 / 켄 그리어 / 명령어 자동 완성, 강력한 히스
 dash 
 매우 가볍고 빠름 /  데비안/우분투의 기본 시스템 / 셸 (/bin/sh) POSIX 표준 준수
 
-[리눅스마스터 2급 데스크톱 환경 및 주요 구성요소]
+
 
 GNOME : 라이브러리 GTK+ / 윈도 매니저 mutter(3버전), metacity(2버전) / 파일 탐색기 Nautilus / 이미지 편집기 GIMP / 뷰어 eog / 멀티미디어 totem
 KDE : 라이브러리 QT / 윈도 매니저 kwin / 파일 관리자 dolphin / 뷰어 gwenview
@@ -45,7 +50,54 @@ KDE : 라이브러리 QT / 윈도 매니저 kwin / 파일 관리자 dolphin / �
 6번 - 체 (체크/무결성 검사 순서): 부팅 시 파일시스템을 검사할 것인지 (0, 1, 2)
 
 
-~/.bash_profile: 최초 로그인 시 환경변수($PATH 등) 설정
-~/.bashrc: 터미널 창을 열 때마다 적용되는 앨리어스(alias) 및 개인 설정
-~/.bash_history: 입력했던 명령어 기록 저장
-~/.bash_logout: 로그아웃 시 실행되는 마무리 작업 스크립트
+
+
+/etc/profile: 시스템 전체 환경변수 및 시작 프로그램 설정 (전역)
+/etc/bashrc: 시스템 전체 별칭 및 함수 설정 (전역)
+~/.bash_profile: 개인별 최초 로그인 시 환경변수 설정 (지역)
+~/.bashrc: 개인별 터미널 창을 열 때마다 적용되는 별칭 및 설정 (지역)
+~/.bash_history: 입력한 명령어 기록 저장
+~/.bash_logout: 로그아웃 시 실행되는 스크립트
+
+
+
+Evince: PDF
+LibreOffice Writer: 워드 프로세서
+LibreOffice Calc: 스프레드시트
+LibreOffice Impress: 프레젠테이션
+
+
+
+
+kubernetes : 컨테이너 대규모, 오케스트레이션(조율)
+ansible : 초기설정, 패키지, 설정 파일
+docker : 이미지, 격리된 컨테이너
+openstack : 클라우드 인프라
+
+
+
+
+
+20 FTP-Data
+21 FTP-Control
+22 SSH
+23 Telnet
+25 SMTP
+53 DNS
+80 HTTP
+110 POP3
+143 IMAP
+161 SNMP
+162 SNMP
+443 HTTPS
+
+PS1: 터미널의 기본 프롬프트
+PS2: 보조 프롬프트
+PS3: select 구문
+PS4: 디버깅 모드(set -x)
+
+
+IEEE
+ISO
+I
+
