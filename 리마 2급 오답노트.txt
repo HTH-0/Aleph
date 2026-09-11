@@ -20,24 +20,27 @@ SIGTERM	15번	(정상 종료, kill 명령어 기본값)
 SIGSTOP	19번	(프로세스 일시 정지, 명령어로만 전송 가능)
 SIGTSTP	20번	[ctrl z] (키보드 일시 정지, 백그라운드 전환 대기)
 
-ctrl d	EOF (입력 끝, 쉘 종료/로그아웃)
+ctrl d	(입력 끝, 쉘 종료/로그아웃)
 ctrl a	입력 커서 맨 앞으로 이동
 ctrl e	입력 커서 맨 뒤로 이동
 
 
-
+csh
+빌 조이 / 별칭(Alias) 제공 / C 언어 구문과 유사
+ksh 
+데이비드 콘  / 명령어 편집 기능 강화 / Bourne 셸 기반 상위 호환
+tcsh 
+C 셸 확장 / 켄 그리어 / 명령어 자동 완성, 강력한 히스토리 편집
 bash 
 리눅스 표준(기본) 셸 / GNU 프로젝트 / 브라이언 폭스
-ksh 
-데이비드 콘 (AT&T 벨 연구소) / 명령어 편집 기능 강화 / Bourne 셸 기반 상위 호환
-tcsh 
-C 셸(csh) 확장판 / 켄 그리어 / 명령어 자동 완성, 강력한 히스토리 편집
 dash 
-매우 가볍고 빠름 /  데비안/우분투의 기본 시스템 / 셸 (/bin/sh) POSIX 표준 준수
+매우 가볍고 빠름 /  데비안,우분투 /POSIX 표준 준수
+(나온 순대로 정리)
 
 
 
-GNOME : 라이브러리 GTK+ / 윈도 매니저 mutter(3버전), metacity(2버전) / 파일 탐색기 Nautilus / 이미지 편집기 GIMP / 뷰어 eog / 멀티미디어 totem
+
+GNOME : 라이브러리 GTK+ / 윈도 매니저 mutter, metacity / 파일 탐색기 Nautilus / 이미지 편집기 GIMP / 뷰어 eog / 멀티미디어 totem
 KDE : 라이브러리 QT / 윈도 매니저 kwin / 파일 관리자 dolphin / 뷰어 gwenview
 
 
@@ -69,7 +72,7 @@ LibreOffice Impress: 프레젠테이션
 
 
 
-kubernetes : 컨테이너 대규모, 오케스트레이션(조율)
+kubernetes : 컨테이너 대규모, 오케스트레이션(조율), cncf
 ansible : 초기설정, 패키지, 설정 파일
 docker : 이미지, 격리된 컨테이너
 openstack : 클라우드 인프라
@@ -91,13 +94,65 @@ openstack : 클라우드 인프라
 162 SNMP
 443 HTTPS
 
+
+
+
 PS1: 터미널의 기본 프롬프트
 PS2: 보조 프롬프트
 PS3: select 구문
 PS4: 디버깅 모드(set -x)
 
 
-IEEE
-ISO
-I
 
+
+크롬 - "구글"
+사파리 - "애플"
+오페라 - "노르웨이"
+파이어폭스 - "모질라재단"
+
+
+
+
+Tizen : 삼성 + 인텔
+webOS : LG
+Bada OS : 삼성
+QNX : 유닉스
+
+
+
+
+/etc/sysconfig/network-scripts : 개별 네트워크 인터페이스 설정 "디렉터리"
+/etc/sysconfig/network : 호스트명 및 전역 네트워크 활성화 설정 "파일"
+/etc/resolv.conf : DNS 네임서버 지정 (도메인-IP 변환)
+/etc/hosts : 로컬 IP-호스트명 직접 매핑 
+
+
+
+
+exrc -> vi
+vimrc -> vim
+
+
+
+ICANN : 도메인, IP 주소 (주소 자원 총괄)
+IEEE : 802 시리즈 (LAN / Wi-Fi 표준)
+ISO : OSI 7계층 (국제 표준)
+EIA : RS-232C (물리 케이블 규격)
+
+
+
+OSS : hannu
+ALSA : jaroslav
+
+
+
+dpkg : 신규 설치 (-i), 일반 제거 (-r), 완전 제거 (-P), 전체 조회 (-l), 파일 목록 (-L) 
+rpm : 신규 설치 (-i, -U), 제거 (-e), 전체 조회 (-qa), 파일 목록 (-ql)
+yum : 설치 (install), 삭제 (remove), 업데이트 (update), 목록 조회 (list), 상세 정보 (info)
++
+
+
+Hadoop : 대용량 데이터 분산 저장·처리
+NoSQL : 비관계형 데이터베이스
+R : 데이터 분석 및 통계 전용 언어
+Cassandra : 대표적인 NoSQL DB
