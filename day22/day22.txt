@@ -1,0 +1,56 @@
+SOC (보안 운영 센터)
+보안 전담 조직 및 24/7 모니터링 센터
+
+SIEM: 로그 수집 및 통합 위협 분석, 보안 정보 및 이벤트 관리
+
+XDR: 엔드포인트·클라우드 등 멀티레이어 통합 탐지·대응, 확장된 탐지 및 대응
+
+SOAR: 보안 업무 자동화 및 플레이북 기반 대응, 보안 오케스트레이션 및 자동화 대응
+
+AI 기반 자율형 SOC
+
+
+<< ubuntu- wazuh 192.168.16.64 >>
+
+sudo apt update -y && sudo apt upgrade -y
+
+sudo apt install -y iputils-ping vim
+
+sudo curl -sO https://packages.wazuh.com/4.9/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
+	> User: admin
+    	> Password: 3QsfS*voOOqIW2h9dOml6?+PsFSkqRi9
+
+
+<< WEB >>
+https://192.168.16.64 접속하면 wazuh 접속됨
+
+Server management > Endpoints summary > deploy new agent
+LINUX > DEB amd64
+Server address : 192.168.16.64 (서버주소)
+Assign an agent name : ubuntu-agent
+Select one or more existing groups : default
+
+Run the following commands to download and install the agent 내용물 복사
+	>> wget 어쩌구 ~~~
+
+agent ubuntu (16.80) 에 붙여넣기
+
+<< ubuntu wazuh-agent 192.168.16.80 >>
+
+sudo wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.9.2-1_amd64.deb && sudo WAZUH_MANAGER='192.168.16.64' WAZUH_AGENT_GROUP='default' WAZUH_AGENT_NAME='ubuntu-agent' dpkg --install ./wazuh-agent_4.9.2-1_amd64.deb
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable --now wazuh-agent
+
+
+<< 윈도우도 똑같이 >>
+
+
+<< 서버 .64 >>
+
+sudo ls /var/ossec/ruleset/rules
+	> 여기에 rule 파일 있음
+
+
+

@@ -1,0 +1,77 @@
+/etc/passwd
+
+root:x:0:0:root:/root:/bin/bash
+
+root : 사용자명 (Username) - 로그인 계정 이름
+x : 암호 지정 (Password) - 실제 암호는 /etc/shadow에 보관됨을 의미
+0 : 사용자 ID (UID) - 0은 최고 관리자(root)
+0 : 그룹 ID (GID) - 0은 root 그룹
+root : 사용자 정보 (GECOS) - 계정 설명/메모
+/root : 홈 디렉터리 (Home Directory) - 로그인 시 기본 경로
+/bin/bash : 기본 셸 (Login Shell) - 로그인 시 실행되는 셸 프로그램
+
+
+/etc/shadow
+
+root:$6$ANJPG20.wS.ZckRN$cJXV451aQRSVdZl9E9QUViZpW6ir2p7MoRfxAFjCsgLfxMcOczaCOB3y.w8EAl1dTok6aIl13voBm1RVuP7Kn/::0:99999:7:::
+
+1. root : 사용자명 (Username) - 계정 이름
+2. $6$ANJPG...Kn/ : 암호화된 비밀번호 (Encrypted Password)
+	$6$ : SHA-512 암호화 알고리즘 사용
+	ANJPG20.wS.ZckRN : 솔트(Salt) 값
+	cJXV451... : 해시된 암호 값
+3. (비어있음) : 최종 패스워드 변경일 (Last Password Change) - 1970년 1월 1일 이후 경과한 일수 (비어있으면 미설정)
+4. 0 : 패스워드 최소 변경 주기 (Min Age) - 암호 변경 후 다시 변경할 수 있을 때까지 기다려야 하는 일수 (0은 언제든 변경 가능)
+5. 99999 : 패스워드 최대 유효 기간 (Max Age) - 암호를 변경하지 않고 사용할 수 있는 최대 일수 (99999는 사실상 무제한)
+6. 7 : 패스워드 만료 경고 기간 (Warning Period) - 암호 만료 전 경고 메시지를 출력하는 일수
+7. (비어있음) : 패스워드 비활성화 유예 기간 (Inactivity Period) - 암호 만료 후 계정이 잠기기까지의 유예 일수
+8. (비어있음) : 계정 만료일 (Expiration Date) - 계정 자체가 만료되는 날짜 (1970년 1월 1일 이후 경과 일수)
+9. (비어있음) : 예약 필드 (Reserved) - 향후 사용을 위해 남겨둔 영역
+
+
+
+drwxr-xr-x.
+
+[맨 앞 첫 글자(파일 유형) 종류]
+
+- : 일반 파일 (텍스트, 문서, 이미지 등)
+d : 디렉터리 (폴더)
+l : 심볼릭 링크 (바로가기 파일)
+b : 블록 디바이스 (하드디스크, USB 등)
+c : 문자 디바이스 (키보드, 마우스 등)
+p : 파이프 (프로세스 간 통신 통로)
+s : 소켓 (네트워크/프로세스 통신 창구)
+
+
+umask
+
+
+
+set UID
+4000
+
+set GID
+2000
+
+STICKY BIT
+1000
+
+rwsr-xr-x
+= 4755
+
+
+dnf install -y gcc
+
+gcc -o backdoor backdoor.c
+
+
+
+
+
+
+
+
+
+
+
+

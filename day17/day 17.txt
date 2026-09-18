@@ -1,0 +1,68 @@
+<<<<  ASA1	>>>>
+
+show version
+
+in gi0/0
+ip addr 192.168.250.1 255.255.255.0 standby 192.168.250.2
+no shutdown
+nameif inside
+security-level 100
+
+in gi0/1
+ip addr 1.1.1.1 255.255.255.0 standby 1.1.1.2
+nameif outside
+no shutdown
+
+in gi0/2
+no shutdown
+
+(컨피그)
+failover lan interface FAILOVER gi0/2
+failover interface ip FAILOVER 172.16.0.1 255.255.255.0 standby 172.16.0.2
+failover key test1234
+failover lan unit primary
+failover link FAILOVER gi0/2
+failover
+
+show failover
+	>> Failover On
+	>> Giba~~0/2 (up)
+
+
+<<< ASA 2 >>>
+
+in gi0/0
+ip addr 192.168.250.2 255.255.255.0 standby 192.168.250.1
+nameif inside
+no shutdown
+
+in gi0/1
+ip addr 1.1.1.2 255.255.255.0 standby 1.1.1.1
+nameif outside
+no shutdown
+
+in gi0/2
+no shutdown
+
+(config)
+failover lan interface FAILOVER gi0/2
+failover interface ip FAILOVER 172.16.0.2 255.255.255.0 standby 172.16.0.1
+failover key test1234
+failover lan unit secondary
+failover
+failover link FAILOVER gi0/2
+
+show failover
+show failover history
+
+
+
+<<< ASA 1>>>
+
+http 1.1.1.100 255.255.255.255 outside
+
+
+
+R1#debug ip packet
+
+R1#u all

@@ -1,0 +1,233 @@
+DDOS (Distribute Denial Of Service - 서비스 거부 공격)
+
+IDS (Intrusion Detection System - 침입 탐지 시스템)
+IPS (Intrusion Prevention System - 침입 거부 시스템)
+
+====================
+kali	1234
+
+192.168.16.98
+
+공격대상 ip 192.168.16.53 (ubuntu)
+====================
+
+sudo ip link set eth0 promisc on
+
+sudo hping3
+
+sudo hping3 192.168.16.98 -S -c 1
+
+<terminal 2>
+sudo tcpdump -i eth0
+
+
+
+<terminal 1>
+sudo hping3 192.168.16.53 -a 10.10.10.44
+
+sudo hping3 192.168.16.53 --rand-source -c 1000 -d 10000
+
+sudo hping3 192.168.16.53 --flood -d 50000
+
+<ubuntu>
+===========
+192.168.16.53
+===========
+
+
+sudo top 
+
+sudo apt install htop
+sudo apt install btop
+	>> 그래픽으로 더 잘 보이게 하는 도구
+
+sudo apt update -y && sudo apt upgrade -y
+
+sudo apt install git build-essential libpcap-dev libpcre3-dev libnet1-dev zlib1g-dev luajit hwloc libdumbnet-dev bison flex liblzma-dev openssl libssl-dev pkg-config libhwloc-dev cmake cpputest libsqlite3-dev uuid-dev libcmocka-dev libnetfilter-queue-dev libmnl-dev autotools-dev libluajit-5.1-dev libunwind-dev libfl-dev libpcre2-dev -y
+
+설치하고 
+
+sudo git clone https://github.com/snort3/libdaq.git
+
+ls 
+
+cd libdaq
+
+sudo ./bootstrap
+sudo ./configure
+
+sudo make
+sudo make install
+
+sudo wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.13/gperftools-2.13.tar.gz
+
+sudo tar xzf gperftools-2.13.tar.gz
+
+cd gperftools-2.13
+
+sudo ./configure
+
+sudo make
+sudo make install
+
+cd
+sudo wget https://github.com/snort3/snort3/archive/refs/heads/master.zip
+
+sudo apt install -y unzip
+
+sudo unzip master.zip
+
+cd snort3-master/
+sudo ./configure_cmake.sh --prefix=/usr/local --enable-tcmalloc
+
+cd build
+sudo make
+	>> 겁나 오래걸림
+sudo make install
+sudo ldconfig
+sudo snort -V
+	>> 설치 되었는지 버전 확인
+
+sudo ip link set dev enp0s3 promisc on
+sudo snort -c /usr/local/snort/snort.lua
+sudo ethtool -k enp0s3 | grep receive-offload
+sudo ethtool -K enp0s3 gro off lro off
+
+sudo touch /etc/systemd/system/snort3-nic.service
+sudo vi /etc/systemd/system/snort3-nic.service
+	>> 붙여넣기
+<<===========================
+[Unit]
+Description=Set Snort 3 NIC in promiscuous mode and Disable GRO, LRO on boot
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/ip link set dev enp0s3 promisc on
+ExecStart=/usr/sbin/ethtool -K enp0s3 gro off lro off
+TimeoutStartSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
+=========================== >>
+
+sudo systemctl daemon-reload
+sudo systemctl start snort3-nic
+sudo vi /usr/local/etc/snort/snort.lua
+<<============================
+24번 수정
+HOME_NET = '192.168.16.0/24'
+28번 수정
+EXTERNAL_NET = '!$HOME_NET'
+198번 추가	>> 쉼표 꼭 추가
+ variables = default_variables,
+        rules = [[
+                 include /usr/local/etc/snort/rules/local.rules
+         ]]
+===========================>>
+
+sudo mkdir /usr/local/etc/snort/rules/
+sudo touch /usr/local/etc/snort/rules/local.rules
+
+sudo snort -c /usr/local/etc/snort/snort.lua
+	>> snort 실행 ( 에러로 구문 작성 체크 )
+
+sudo vi /usr/local/etc/snort/rules/local.rules
+=====
+alert icmp any any -> $HOME_NET any (msg:"DDoS Attack"; sid:10000001; rev:1;)
+=====
+
+sudo snort -c /usr/local/etc/snort/snort.lua -R /usr/local/etc/snort/rules/local.rules -i enp0s3 -A alert_fast -s 65535 -k none
+
+	>> 룰을 적용해서 실행하고 싶을 때
+
+
+sudo vi /usr/local/etc/snort/rules/local.rules
+>> 한줄 더 추가
+======
+alert icmp any any -> $HOME_NET any (msg:"DDoS Attack"; sid:100001; rev:1;)
+alert tcp 192.168.16.98 any -> 192.168.16.53 80 (msg:"Web Hack"; sid:1000002; rev:1;)
+======
+
+sudo systemctl status apache2
+sudo systemctl start apache2
+sudo systemctl enable apache2
+sudo firewall-cmd --list-all
+
+
+<rockey>
+========
+192.168.16.80
+=========
+
+dnf install -y epel-release
+dnf update -y
+dnf install -y suricata
+
+ vi /etc/suricata/suricata.yaml
+======================
+629번
+  - interface: enp0s3
+======================
+
+ vi /etc/sysconfig/suricata
+======================
+8번
+OPTIONS="-i enp0s3 --user suricata "
+======================
+
+suricata-update
+systemctl enable --now suricata
+
+ls /var/log/suricata
+tail -f /var/log/suricata/suricata.log
+
+curl http://testmynids.org/uid/index.html
+
+cat /var/log/suricata/fast.log
+ls /var/lib/suricata/rules
+	>> 여기안에 suricata.rules 있음
+
+suricata-update list-sources
+	>> 룰셋 볼 수 있음
+
+suricata-update enable-source et/open
+
+suricata-update
+
+vi /etc/suricata/rules/local.rules
+===
+alert icmp any any -> $HOME_NET any (msg:"DDoS Attack"; sid:1; rev:1;)
+===
+
+vi /etc/suricata/suricata.yaml
+=========
+2237줄에 추가
+   - /etc/suricata/rules/local.rules
+=========
+
+suricata -T -c /etc/suricata/suricata.yaml
+	>> 설정 파일 테스트
+
+systemctl restart suricata
+
+cat /var/log/suricata/fast.log
+	>> 여기 ip로 핑 했다가 검색하면 내용 생김
+
+cat /var/log/suricata/eve.json | jq .
+	>> json 형태로 보기
+
+tail -f /var/log/suricata/eve.json | jq 'select(.event_type=="alert")'
+
+
+
+
+
+
+
+
+
+
+
+

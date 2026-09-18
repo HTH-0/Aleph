@@ -1,0 +1,66 @@
+<<<<<<ubuntu 2  - server 역할 192.168.16.99>>>>>>
+
+
+sudo apt install -y build-essential make zlib1g-dev libpcre2-dev libevent-dev libssl-dev libz-dev libsqlite3-dev
+
+sudo wget -q -O - https://updates.atomicorp.com/installers/atomic
+| sudo bash
+	> yes
+
+sudo apt install -y ossec-hids-server
+
+sudo vi /var/ossec/etc/ossec.conf
+=======================
+5번 >> no 로 변경
+    <email_notification>no</email_notification>
+118
+<allowed-ips>192.168.16.0/24</allowed-ips>
+================================
+
+sudo /var/ossec/bin/manage_agents
+	> A > hth > 192.168.16.80 (클라이언트) > 001 > y
+	> a > window11 > 192.168.16.135 (윈도우) > 002 > y
+		>> 서버에 로그를 보낼 수 있게 하는 agent 등록
+	> e > 001
+	> e > 002
+		>> 서버에 접속 할 인증키
+
+
+<<<<<ubuntu 1 - client 역할 .80>>>>>>
+
+sudo wget -q -O - https://updates.atomicorp.com/installers/atomic
+| sudo bash
+	> yes
+
+sudo apt install -y ossec-hids-agent
+
+sudo vi /var/ossec/etc/ossec.conf
+==================
+5번 ip 수정
+<server-ip>192.168.16.99</server-ip>
+==================
+
+sudo /var/ossec/bin/manage_agents
+	> i  > 아까 서버에서 받았던 키 복사해서 붙여넣기 > y
+
+
+<<<< 서버에서>>>>
+sudo /var/ossec/bin/ossec-control start
+
+sudo /var/ossec/bin/ossec-control status
+	>> 잘 되는지 확인
+
+
+<<<< 윈도우 >>>>>
+manage_agents.exe 들어가서  똑같이 키 등록하기
+
+ossec.conf 파일에 들어가서 ( 메모장 관리자권한으로 )
+=====
+이거 찾아서 ip 수정
+<client> <server-ip>192.168.16.99</server-ip> </client>
+=====
+
+
+
+
+

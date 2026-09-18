@@ -1,0 +1,619 @@
+#!/bin/bash
+# ==============================================================================
+# 주요정보통신기반시설 기술적 취약점 분석·평가 - UNIX (3. 서비스 관리 U-34 ~ U-63)
+# PDF(2026 주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드) 판단 기준 기준 수정판
+# ==============================================================================
+
+if [ "$EUID" -ne 0 ]; then
+    echo "이 스크립트는 root 권한으로 실행해야 정확한 점검이 가능합니다."
+    exit 1
+fi
+
+echo "=============================================================================="
+echo "                   UNIX 서비스 관리 영역 점검을 시작합니다                    "
+echo "=============================================================================="
+
+TOTAL_VULN=0
+
+# ------------------------------------------------------------------------------
+# U-34 Finger 서비스 비활성화
+# ------------------------------------------------------------------------------
+RESULT_U34="양호"
+if [ -f /etc/inetd.conf ] && grep -Eq '^[^#]*finger' /etc/inetd.conf 2>/dev/null; then
+    RESULT_U34="취약(inetd.conf 활성화)"
+elif [ -f /etc/xinetd.d/finger ] && grep -i 'disable' /etc/xinetd.d/finger | grep -v '^\s*#' | grep -qi 'no'; then
+    RESULT_U34="취약(xinetd disable=no)"
+else
+    FINGER_SVC=$(systemctl is-active finger 2>/dev/null)
+    FINGER_SOCK=$(systemctl is-active finger.socket 2>/dev/null)
+    [ "$FINGER_SVC" = "active" ] || [ "$FINGER_SOCK" = "active" ] && RESULT_U34="취약(systemd 서비스 활성화)"
+fi
+
+if [ "$RESULT_U34" = "양호" ]; then
+    if ss -tln 2>/dev/null | grep -q ':79 '; then
+        RESULT_U34="취약(79포트 리스닝 중)"
+    elif pgrep -f fingerd >/dev/null 2>&1; then
+        RESULT_U34="취약(fingerd 프로세스 실행 중)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-35 공유 서비스에 대한 익명 접근 제한 설정 (FTP, NFS, Samba)
+# ------------------------------------------------------------------------------
+RESULT_U35="양호"
+if id ftp >/dev/null 2>&1 || id anonymous >/dev/null 2>&1; then
+    RESULT_U35="취약(ftp/anonymous 계정 존재)"
+fi
+
+if [ "$RESULT_U35" = "양호" ]; then
+    if [ -f /etc/vsftpd/vsftpd.conf ] && grep -v '^\s*#' /etc/vsftpd/vsftpd.conf | grep -qi 'anonymous_enable=YES'; then
+        RESULT_U35="취약(vsftpd 익명 접속 허용)"
+    elif [ -f /etc/vsftpd.conf ] && grep -v '^\s*#' /etc/vsftpd.conf | grep -qi 'anonymous_enable=YES'; then
+        RESULT_U35="취약(vsftpd 익명 접속 허용)"
+    fi
+fi
+
+if [ "$RESULT_U35" = "양호" ]; then
+    if [ -f /etc/exports ] && grep -v '^\s*#' /etc/exports | grep -Eq 'anonuid|anongid'; then
+        RESULT_U35="취약(NFS 익명 접근 허용)"
+    fi
+fi
+
+if [ "$RESULT_U35" = "양호" ]; then
+    if [ -f /etc/samba/smb.conf ] && grep -v '^\s*#\|^\s*;' /etc/samba/smb.conf | grep -qi 'guest ok\s*=\s*yes'; then
+        RESULT_U35="취약(Samba 익명(guest) 접근 허용)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-36 r계열 서비스 비활성화 (rlogin, rsh, rexec)
+# ------------------------------------------------------------------------------
+RESULT_U36="양호"
+for r_svc in rlogin rsh rexec; do
+    if [ -f /etc/inetd.conf ] && grep -Eq "^[^#]*$r_svc" /etc/inetd.conf 2>/dev/null; then
+        RESULT_U36="취약($r_svc inetd 활성화)"
+    elif [ -f /etc/xinetd.d/$r_svc ] && grep -i 'disable' /etc/xinetd.d/$r_svc | grep -v '^\s*#' | grep -qi 'no'; then
+        RESULT_U36="취약($r_svc xinetd disable=no)"
+    elif [ "$(systemctl is-active $r_svc 2>/dev/null)" = "active" ]; then
+        RESULT_U36="취약($r_svc systemd 활성화)"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-37 crontab 설정파일 권한 설정 미흡
+# 판단 기준: crontab/at 명령어에 "일반 사용자 실행 권한이 제거"되어 있고,
+#           cron/at 관련 파일 권한이 640 이하여야 양호
+# (기존 코드는 명령어의 실행권한/SUID 제거 여부를 전혀 보지 않던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U37="양호"
+for f in /usr/bin/crontab /usr/bin/at; do
+    if [ -f "$f" ]; then
+        PERM=$(stat -c "%a" "$f" 2>/dev/null)
+        if [ -n "$PERM" ]; then
+            LAST3=$(echo "$PERM" | awk '{print substr($0, length($0)-2)}')
+            [ "$LAST3" -gt 750 ] 2>/dev/null && RESULT_U37="취약(${f} 일반 권한 750 초과: $LAST3)"
+
+            # SUID/SGID 비트 제거 여부 확인 (PDF: "SUID 설정 제거 필요")
+            if [ "${#PERM}" -eq 4 ] && [ "${PERM:0:1}" != "0" ]; then
+                RESULT_U37="취약(${f} SUID/SGID 비트 설정됨: $PERM)"
+            fi
+
+            # 일반 사용자(other) 실행 권한 제거 여부 확인
+            OTHER_DIGIT=$((10#$LAST3 % 10))
+            if [ $((OTHER_DIGIT & 1)) -eq 1 ]; then
+                RESULT_U37="취약(${f} 일반 사용자 실행 권한 존재: $PERM)"
+            fi
+        fi
+    fi
+done
+
+if [ "$RESULT_U37" = "양호" ]; then
+    for f in /etc/cron.allow /etc/cron.deny /etc/at.allow /etc/at.deny /var/spool/cron/crontabs /var/spool/cron/atjobs /var/spool/cron; do
+        if [ -e "$f" ]; then
+            PERM=$(stat -c "%a" "$f" 2>/dev/null | awk '{print substr($0, length($0)-2)}')
+            [ -n "$PERM" ] && [ "$PERM" -gt 640 ] && RESULT_U37="취약(${f} 권한 640 초과: $PERM)"
+        fi
+    done
+fi
+
+# ------------------------------------------------------------------------------
+# U-38 DoS 공격에 취약한 서비스 비활성화 (echo, discard, daytime, chargen)
+# ------------------------------------------------------------------------------
+RESULT_U38="양호"
+for dos_svc in echo discard daytime chargen; do
+    if [ -f /etc/inetd.conf ] && grep -Eq "^[^#]*$dos_svc" /etc/inetd.conf 2>/dev/null; then
+        RESULT_U38="취약($dos_svc 활성화)"
+    elif [ -f /etc/xinetd.d/$dos_svc ] && grep -i 'disable' /etc/xinetd.d/$dos_svc | grep -v '^\s*#' | grep -qi 'no'; then
+        RESULT_U38="취약($dos_svc disable=no)"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-39 불필요한 NFS 서비스 비활성화
+# ------------------------------------------------------------------------------
+RESULT_U39="양호"
+if [ "$(systemctl is-active nfs 2>/dev/null)" = "active" ] || [ "$(systemctl is-active nfs-server 2>/dev/null)" = "active" ] || pgrep -f nfsd >/dev/null 2>&1; then
+    RESULT_U39="취약(NFS 서비스 동작 중)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-40 NFS 접근 통제
+# 판단 기준: 접근 통제 설정 + 파일 권한 644 이하 -> 양호
+#           접근 통제 없음 + 파일 권한 644 초과 -> 취약
+# (기존 코드는 파일 권한(644)을 전혀 확인하지 않던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U40="양호"
+if [ -f /etc/exports ]; then
+    if grep -v '^\s*#' /etc/exports | grep -Eq '(^|[[:space:]])\*([[:space:](]|$)|everyone'; then
+        RESULT_U40="취약(NFS 전체 공유 * 설정 - 접근통제 없음)"
+    fi
+
+    PERM=$(stat -c "%a" /etc/exports 2>/dev/null | awk '{print substr($0, length($0)-2)}')
+    if [ -n "$PERM" ] && [ "$PERM" -gt 644 ]; then
+        RESULT_U40="취약(/etc/exports 권한 644 초과: $PERM)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-41 불필요한 automountd 제거
+# ------------------------------------------------------------------------------
+RESULT_U41="양호"
+if [ "$(systemctl is-active autofs 2>/dev/null)" = "active" ] || pgrep -f automount >/dev/null 2>&1; then
+    RESULT_U41="취약(autofs/automountd 실행 중)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-42 불필요한 RPC 서비스 비활성화
+# PDF Linux 사례는 inetd / xinetd / systemd(프로세스) 세 가지를 모두 점검함
+# (기존 코드는 pgrep만 사용하여 inetd/xinetd 활성화 여부를 놓치던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U42="양호"
+RPC_SVCS="rpc.cmsd rpc.ttdbserverd sadmind rusersd walld sprayd rstatd rpc.nisd rexd rpc.pcnfsd rpc.statd rpc.ypupdated rpc.rquotad kcms_server cachefsd"
+for rpc in $RPC_SVCS; do
+    if [ -f /etc/inetd.conf ] && grep -Eq "^[^#]*$rpc" /etc/inetd.conf 2>/dev/null; then
+        RESULT_U42="취약(${rpc} inetd 활성화)"
+        break
+    fi
+    if [ -f /etc/xinetd.d/$rpc ] && grep -i 'disable' /etc/xinetd.d/$rpc | grep -v '^\s*#' | grep -qi 'no'; then
+        RESULT_U42="취약(${rpc} xinetd disable=no)"
+        break
+    fi
+    if pgrep -f "$rpc" >/dev/null 2>&1; then
+        RESULT_U42="취약(${rpc} 프로세스 실행 중)"
+        break
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-43 NIS, NIS+ 점검
+# PDF 참고란의 NIS 관련 데몬: ypserv, ypbind, ypxfrd, rpc.yppasswdd, rpc.ypupdated
+# (기존 코드는 ypxfrd, rpc.ypupdated가 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U43="양호"
+NIS_DAEMONS="ypserv ypbind ypxfrd yppasswdd ypupdated"
+for d in $NIS_DAEMONS; do
+    if [ "$(systemctl is-active $d 2>/dev/null)" = "active" ] || pgrep -f "$d" >/dev/null 2>&1; then
+        RESULT_U43="취약(NIS 관련 데몬 실행 중: $d)"
+        break
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-44 tftp, talk 서비스 비활성화
+# PDF Linux 사례는 inetd / xinetd / systemd 세 가지를 모두 점검함
+# (기존 코드는 /etc/inetd.conf 확인이 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U44="양호"
+for tt in tftp talk ntalk; do
+    if [ -f /etc/inetd.conf ] && grep -Eq "^[^#]*$tt" /etc/inetd.conf 2>/dev/null; then
+        RESULT_U44="취약($tt inetd 활성화)"
+    elif [ -f /etc/xinetd.d/$tt ] && grep -i 'disable' /etc/xinetd.d/$tt | grep -v '^\s*#' | grep -qi 'no'; then
+        RESULT_U44="취약($tt xinetd 활성화)"
+    elif [ "$(systemctl is-active $tt 2>/dev/null)" = "active" ]; then
+        RESULT_U44="취약($tt systemd 활성화)"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-45 메일 서비스 버전 점검 (자동으로 최신 버전 여부를 판정할 수 없어 수동점검 유지)
+# ------------------------------------------------------------------------------
+RESULT_U45="양호"
+if pgrep -f sendmail >/dev/null 2>&1 || pgrep -f postfix >/dev/null 2>&1 || pgrep -f exim >/dev/null 2>&1; then
+    RESULT_U45="수동점검(메일 서비스 패치 버전을 확인하세요)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-46 일반 사용자의 메일 서비스 실행 방지 (Sendmail/Postfix/Exim)
+# ------------------------------------------------------------------------------
+RESULT_U46="양호"
+if [ -f /etc/mail/sendmail.cf ]; then
+    if ! grep -q 'O PrivacyOptions.*restrictqrun' /etc/mail/sendmail.cf 2>/dev/null; then
+        RESULT_U46="취약(Sendmail restrictqrun 옵션 미설정)"
+    fi
+fi
+for f in /usr/sbin/postsuper /usr/bin/postsuper; do
+    if [ -x "$f" ]; then
+        PERM=$(stat -c "%a" "$f" 2>/dev/null)
+        OTHER=$((10#$PERM % 10))
+        [ $((OTHER & 1)) -eq 1 ] && RESULT_U46="취약(${f} 일반 사용자 실행 권한 존재)"
+    fi
+done
+for f in /usr/sbin/exiqgrep /usr/bin/exiqgrep; do
+    if [ -x "$f" ]; then
+        PERM=$(stat -c "%a" "$f" 2>/dev/null)
+        OTHER=$((10#$PERM % 10))
+        [ $((OTHER & 1)) -eq 1 ] && RESULT_U46="취약(${f} 일반 사용자 실행 권한 존재)"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-47 스팸 메일 릴레이 제한 (Sendmail/Postfix/Exim)
+# ------------------------------------------------------------------------------
+RESULT_U47="양호"
+if pgrep -f sendmail >/dev/null 2>&1; then
+    [ -f /etc/mail/access ] || RESULT_U47="취약(Sendmail relay 거부 access 파일 미존재)"
+fi
+if [ -f /etc/postfix/main.cf ] && pgrep -f postfix >/dev/null 2>&1; then
+    if ! grep -Ev '^\s*#' /etc/postfix/main.cf | grep -Eq 'mynetworks\s*=|smtpd_recipient_restrictions\s*='; then
+        RESULT_U47="취약(Postfix relay 제한 설정 없음)"
+    fi
+fi
+if pgrep -f exim >/dev/null 2>&1; then
+    EXIM_CONF=""
+    [ -f /etc/exim/exim.conf ] && EXIM_CONF="/etc/exim/exim.conf"
+    [ -f /etc/exim4/exim4.conf ] && EXIM_CONF="/etc/exim4/exim4.conf"
+    if [ -n "$EXIM_CONF" ] && ! grep -Eq 'relay_from_hosts|hostlist' "$EXIM_CONF"; then
+        RESULT_U47="취약(Exim relay 제한 설정 없음)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-48 expn, vrfy 명령어 제한 (Sendmail/Postfix/Exim)
+# ------------------------------------------------------------------------------
+RESULT_U48="양호"
+if [ -f /etc/mail/sendmail.cf ]; then
+    if ! grep -q 'O PrivacyOptions.*noexpn' /etc/mail/sendmail.cf 2>/dev/null || \
+       ! grep -q 'O PrivacyOptions.*novrfy' /etc/mail/sendmail.cf 2>/dev/null; then
+        RESULT_U48="취약(sendmail noexpn/novrfy 옵션 미설정)"
+    fi
+fi
+if [ -f /etc/postfix/main.cf ]; then
+    if ! grep -Ev '^\s*#' /etc/postfix/main.cf | grep -Eq 'disable_vrfy_command\s*=\s*yes'; then
+        RESULT_U48="취약(Postfix disable_vrfy_command 미설정)"
+    fi
+fi
+EXIM_CONF=""
+[ -f /etc/exim/exim.conf ] && EXIM_CONF="/etc/exim/exim.conf"
+[ -f /etc/exim4/exim4.conf ] && EXIM_CONF="/etc/exim4/exim4.conf"
+if [ -n "$EXIM_CONF" ] && grep -Eq 'acl_smtp_vrfy\s*=\s*accept|acl_smtp_expn\s*=\s*accept' "$EXIM_CONF"; then
+    RESULT_U48="취약(Exim vrfy/expn 허용 설정)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-49 DNS 보안 버전 패치 (자동으로 최신 버전 여부를 판정할 수 없어 수동점검 유지)
+# ------------------------------------------------------------------------------
+RESULT_U49="양호"
+if pgrep -f named >/dev/null 2>&1; then
+    RESULT_U49="수동점검(DNS Bind 보안 패치 버전 확인 필요)"
+fi
+
+# ------------------------------------------------------------------------------
+# 공통: named 설정 파일 파악 (RedHat 계열 /etc/named.conf, Debian 계열
+# /etc/bind/named.conf.options 를 모두 확인하고, 중괄호 블록이 여러 줄로
+# 나뉘어 있어도 매칭되도록 개행을 공백으로 치환해 하나의 문자열로 둔다)
+# ------------------------------------------------------------------------------
+NAMED_FLAT=""
+for f in /etc/named.conf /etc/bind/named.conf.options; do
+    if [ -f "$f" ]; then
+        NAMED_FLAT="$NAMED_FLAT $(grep -v '^\s*//' "$f" 2>/dev/null | tr '\n' ' ')"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# U-50 DNS Zone Transfer 설정
+# 판단 기준: Zone Transfer를 허가된 사용자에게만 허용 -> 양호
+#           모든 사용자에게 허용(allow-transfer 미설정 또는 any) -> 취약
+# (기존 코드는 /etc/bind/named.conf.options 미확인, allow-transfer 값이
+#  any인지 여부를 확인하지 않던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U50="양호"
+if [ -n "$NAMED_FLAT" ]; then
+    if ! echo "$NAMED_FLAT" | grep -q 'allow-transfer'; then
+        RESULT_U50="취약(allow-transfer 제한 없음)"
+    elif echo "$NAMED_FLAT" | grep -Eq 'allow-transfer[[:space:]]*\{[^}]*\bany\b[^}]*\}'; then
+        RESULT_U50="취약(allow-transfer가 모든 사용자(any)에게 허용됨)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-51 DNS 서비스의 취약한 동적 업데이트 설정 금지
+# 판단 기준: 동적 업데이트 비활성화 또는 (활성화 시 적절한 접근통제) -> 양호
+#           활성화 + 접근통제 없음(any) -> 취약
+# (기존 코드는 /etc/bind/named.conf.options 미확인 및 여러 줄로 나뉜
+#  allow-update { \n any; \n }; 블록을 놓치던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U51="양호"
+if [ -n "$NAMED_FLAT" ]; then
+    if echo "$NAMED_FLAT" | grep -Eq 'allow-update[[:space:]]*\{[^}]*\bany\b[^}]*\}'; then
+        RESULT_U51="취약(allow-update가 모든 사용자(any)에게 허용됨)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-52 Telnet 서비스 비활성화
+# PDF Linux 사례는 inetd / xinetd / systemd 세 가지를 모두 점검함
+# (기존 코드는 inetd/xinetd 확인이 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U52="양호"
+if [ -f /etc/inetd.conf ] && grep -Eq '^[^#]*telnet' /etc/inetd.conf 2>/dev/null; then
+    RESULT_U52="취약(Telnet inetd 활성화)"
+elif [ -f /etc/xinetd.d/telnet ] && grep -i 'disable' /etc/xinetd.d/telnet | grep -v '^\s*#' | grep -qi 'no'; then
+    RESULT_U52="취약(Telnet xinetd 활성화)"
+elif [ "$(systemctl is-active telnetd 2>/dev/null)" = "active" ] || [ "$(systemctl is-active telnet.socket 2>/dev/null)" = "active" ] || ss -tln 2>/dev/null | grep -q ':23 '; then
+    RESULT_U52="취약(Telnet 서비스 활성화)"
+fi
+
+# ------------------------------------------------------------------------------
+# 공통: vsFTP / ProFTP 설정 파일 경로 파악
+# ------------------------------------------------------------------------------
+VSFTP_CONF=""
+[ -f /etc/vsftpd/vsftpd.conf ] && VSFTP_CONF="/etc/vsftpd/vsftpd.conf"
+[ -f /etc/vsftpd.conf ] && VSFTP_CONF="/etc/vsftpd.conf"
+
+PROFTP_CONF=""
+[ -f /etc/proftpd/proftpd.conf ] && PROFTP_CONF="/etc/proftpd/proftpd.conf"
+[ -f /etc/proftpd.conf ] && PROFTP_CONF="/etc/proftpd.conf"
+
+# ------------------------------------------------------------------------------
+# U-53 FTP 서비스 정보 노출 제한
+# PDF Linux 사례는 vsFTP(ftpd_banner)와 ProFTP(ServerIdent)를 모두 점검함
+# (기존 코드는 ProFTP 확인이 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U53="양호"
+if [ -n "$VSFTP_CONF" ] && ! grep -v '^\s*#' "$VSFTP_CONF" | grep -qi 'ftpd_banner'; then
+    RESULT_U53="취약(vsftpd ftpd_banner 경고 문구 미설정)"
+fi
+if [ "$RESULT_U53" = "양호" ] && [ -n "$PROFTP_CONF" ] && ! grep -v '^\s*#' "$PROFTP_CONF" | grep -qi 'ServerIdent'; then
+    RESULT_U53="취약(ProFTP ServerIdent 미설정)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-54 암호화되지 않는 FTP 서비스 비활성화
+# ------------------------------------------------------------------------------
+RESULT_U54="양호"
+if [ "$(systemctl is-active vsftpd 2>/dev/null)" = "active" ] || [ "$(systemctl is-active proftpd 2>/dev/null)" = "active" ] || ss -tln 2>/dev/null | grep -q ':21 '; then
+    RESULT_U54="취약(FTP 암호화 미적용/서비스 활성화 - SFTP 권장)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-55 FTP 계정 Shell 제한
+# ------------------------------------------------------------------------------
+RESULT_U55="양호"
+if grep -E '^ftp:' /etc/passwd 2>/dev/null | grep -vE '/bin/false|/sbin/nologin'; then
+    RESULT_U55="취약(ftp 계정 쉘이 nologin/false가 아님)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-56 FTP 서비스 접근 제어 설정
+# PDF Linux 사례는 vsFTP(userlist_enable)와 ProFTP(UseFtpUsers/<Limit LOGIN>)를
+# 모두 점검함 (기존 코드는 ProFTP 확인이 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U56="양호"
+if [ -n "$VSFTP_CONF" ] && ! grep -v '^\s*#' "$VSFTP_CONF" | grep -qi 'userlist_enable=YES'; then
+    RESULT_U56="취약(vsftpd userlist_enable 미설정)"
+fi
+if [ "$RESULT_U56" = "양호" ] && [ -z "$VSFTP_CONF" ] && [ -n "$PROFTP_CONF" ]; then
+    LIMIT_BLOCK=$(sed -n '/<Limit LOGIN>/,/<\/Limit>/p' "$PROFTP_CONF" 2>/dev/null)
+    if [ -z "$LIMIT_BLOCK" ]; then
+        RESULT_U56="취약(ProFTP <Limit LOGIN> 접근제어 미설정)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-57 Ftpusers 파일 설정 (root 계정 차단 확인)
+# PDF는 vsFTP의 경우 userlist_enable 값에 따라 참조 파일이 ftpusers <-> user_list로
+# 달라지고, ProFTP는 RootLogin 설정을 본다. (기존 코드는 이 분기를 하지 않고
+# 고정된 ftpusers 파일만 보던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U57="양호"
+if [ -n "$VSFTP_CONF" ]; then
+    if grep -v '^\s*#' "$VSFTP_CONF" | grep -qi 'userlist_enable=YES'; then
+        USERLIST_FILE=""
+        [ -f /etc/vsftpd/user_list ] && USERLIST_FILE="/etc/vsftpd/user_list"
+        [ -f /etc/vsftpd.user_list ] && USERLIST_FILE="/etc/vsftpd.user_list"
+        if [ -n "$USERLIST_FILE" ]; then
+            grep -v '^\s*#' "$USERLIST_FILE" | grep -q '^root$' || RESULT_U57="취약(vsftpd user_list 내 root 차단 설정 누락)"
+        else
+            RESULT_U57="취약(vsftpd user_list 파일 미존재)"
+        fi
+    else
+        FTPUSERS_FILE=""
+        [ -f /etc/vsftpd/ftpusers ] && FTPUSERS_FILE="/etc/vsftpd/ftpusers"
+        [ -f /etc/ftpusers ] && FTPUSERS_FILE="/etc/ftpusers"
+        if [ -n "$FTPUSERS_FILE" ]; then
+            grep -v '^\s*#' "$FTPUSERS_FILE" | grep -q '^root$' || RESULT_U57="취약(ftpusers 파일 내 root 차단 설정 누락)"
+        else
+            RESULT_U57="취약(ftpusers 파일 미존재)"
+        fi
+    fi
+elif [ -n "$PROFTP_CONF" ]; then
+    if grep -v '^\s*#' "$PROFTP_CONF" | grep -Eiq '^\s*RootLogin\s+on'; then
+        RESULT_U57="취약(ProFTP RootLogin on - root 접속 허용)"
+    fi
+    FTPUSERS_FILE=""
+    [ -f /etc/ftpusers ] && FTPUSERS_FILE="/etc/ftpusers"
+    if [ -n "$FTPUSERS_FILE" ]; then
+        grep -v '^\s*#' "$FTPUSERS_FILE" | grep -q '^root$' || RESULT_U57="취약(ftpusers 파일 내 root 차단 설정 누락)"
+    fi
+else
+    FTPUSERS_FILE=""
+    [ -f /etc/ftpusers ] && FTPUSERS_FILE="/etc/ftpusers"
+    if [ -n "$FTPUSERS_FILE" ]; then
+        grep -v '^\s*#' "$FTPUSERS_FILE" | grep -q '^root$' || RESULT_U57="취약(ftpusers 파일 내 root 차단 설정 누락)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-58 불필요한 SNMP 서비스 구동 점검
+# ------------------------------------------------------------------------------
+RESULT_U58="양호"
+if [ "$(systemctl is-active snmpd 2>/dev/null)" = "active" ] || pgrep -f snmpd >/dev/null 2>&1; then
+    RESULT_U58="취약(SNMP 서비스 구동 중)"
+fi
+
+# ------------------------------------------------------------------------------
+# U-59 안전한 SNMP 버전 사용
+# ------------------------------------------------------------------------------
+RESULT_U59="양호"
+if [ "$RESULT_U58" != "양호" ] && [ -f /etc/snmp/snmpd.conf ]; then
+    if grep -v '^\s*#' /etc/snmp/snmpd.conf | grep -E -q 'com2sec|rocommunity|rwcommunity'; then
+        RESULT_U59="취약(SNMP v1/v2c 커뮤니티 스트링 설정 사용)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-60 SNMP Community String 복잡성 설정
+# 기준: public/private 아니고, (영문+숫자 10자리 이상) 또는 (영문+숫자+특수문자 8자리 이상)
+# PDF Linux 사례는 Debian 계열(rocommunity/rwcommunity)뿐 아니라 RedHat 계열
+# (com2sec <secname> <source> <community>) 문법도 제시함
+# (기존 코드는 com2sec 라인의 community string을 전혀 검사하지 않던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U60="양호"
+if [ -f /etc/snmp/snmpd.conf ]; then
+    CONF_BODY=$(grep -Ev '^\s*#' /etc/snmp/snmpd.conf)
+    COMMUNITIES=$(echo "$CONF_BODY" | grep -E '^\s*(rocommunity|rwcommunity)\s+' | awk '{print $2}')
+    COM2SEC_COMMUNITIES=$(echo "$CONF_BODY" | grep -E '^\s*com2sec\s+' | awk '{print $NF}')
+    for c in $COMMUNITIES $COM2SEC_COMMUNITIES; do
+        if [ "$c" = "public" ] || [ "$c" = "private" ]; then
+            RESULT_U60="취약(기본 Community String 사용: $c)"
+            break
+        fi
+        LEN=${#c}
+        HAS_ALPHA=0; HAS_DIGIT=0; HAS_SPECIAL=0
+        echo "$c" | grep -q '[A-Za-z]' && HAS_ALPHA=1
+        echo "$c" | grep -q '[0-9]' && HAS_DIGIT=1
+        echo "$c" | grep -q '[^A-Za-z0-9]' && HAS_SPECIAL=1
+
+        if [ "$HAS_ALPHA" -eq 1 ] && [ "$HAS_DIGIT" -eq 1 ] && [ "$LEN" -ge 10 ]; then
+            continue
+        elif [ "$HAS_ALPHA" -eq 1 ] && [ "$HAS_DIGIT" -eq 1 ] && [ "$HAS_SPECIAL" -eq 1 ] && [ "$LEN" -ge 8 ]; then
+            continue
+        else
+            RESULT_U60="취약(Community String 복잡도 미달: $c)"
+            break
+        fi
+    done
+fi
+
+# ------------------------------------------------------------------------------
+# U-61 SNMP Access Control 설정
+# 기준: community string에 접근 허용 IP/네트워크가 함께 지정되어 있는지 확인
+# (RedHat 계열 com2sec, Debian 계열 rocommunity/rwcommunity 모두 확인)
+# ------------------------------------------------------------------------------
+RESULT_U61="양호"
+if [ -f /etc/snmp/snmpd.conf ]; then
+    CONF_BODY=$(grep -Ev '^\s*#' /etc/snmp/snmpd.conf)
+    if echo "$CONF_BODY" | grep -Eq '^\s*(rocommunity|rwcommunity)\s+\S+\s*$'; then
+        RESULT_U61="취약(SNMP 접근 제어(IP/네트워크 제한) 미설정)"
+    fi
+    if echo "$CONF_BODY" | grep -Eq '^\s*com2sec\s+\S+\s+default\s'; then
+        RESULT_U61="취약(SNMP 접근 제어 - com2sec default(모든 IP) 허용)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-62 로그인 시 경고 메시지 설정 (서버 + 활성화된 서비스별 배너 연계)
+# PDF는 서버, Telnet, SSH, Sendmail/Postfix/Exim, vsFTP/ProFTP, DNS 배너를
+# 모두 점검 대상으로 명시함
+# (기존 코드는 SSH Banner, Exim, ProFTP 확인이 빠져 있던 문제를 보완)
+# ------------------------------------------------------------------------------
+RESULT_U62="양호"
+if [ ! -s /etc/motd ] && [ ! -s /etc/issue ]; then
+    RESULT_U62="취약(서버 로그온 경고 메시지 미설정)"
+fi
+
+if { [ "$(systemctl is-active telnetd 2>/dev/null)" = "active" ] || [ "$(systemctl is-active telnet.socket 2>/dev/null)" = "active" ]; } \
+   && [ ! -s /etc/issue.net ]; then
+    RESULT_U62="취약(Telnet 경고 메시지 미설정)"
+fi
+
+if [ "$(systemctl is-active sshd 2>/dev/null)" = "active" ] || [ "$(systemctl is-active ssh 2>/dev/null)" = "active" ]; then
+    if [ -f /etc/ssh/sshd_config ]; then
+        BANNER_PATH=$(grep -Ev '^\s*#' /etc/ssh/sshd_config | grep -Ei '^\s*Banner\s+' | awk '{print $2}' | tail -1)
+        if [ -z "$BANNER_PATH" ] || [ "$BANNER_PATH" = "none" ]; then
+            RESULT_U62="취약(SSH Banner 미설정)"
+        elif [ ! -s "$BANNER_PATH" ]; then
+            RESULT_U62="취약(SSH Banner 파일 내용 없음: $BANNER_PATH)"
+        fi
+    fi
+fi
+
+if { [ "$(systemctl is-active vsftpd 2>/dev/null)" = "active" ]; }; then
+    if [ -n "$VSFTP_CONF" ] && ! grep -qi 'ftpd_banner' "$VSFTP_CONF"; then
+        RESULT_U62="취약(FTP 경고 메시지 미설정)"
+    fi
+fi
+if { [ "$(systemctl is-active proftpd 2>/dev/null)" = "active" ]; }; then
+    if [ -n "$PROFTP_CONF" ] && ! grep -qi 'DisplayLogin' "$PROFTP_CONF"; then
+        RESULT_U62="취약(ProFTP 경고 메시지(DisplayLogin) 미설정)"
+    fi
+fi
+
+if pgrep -f sendmail >/dev/null 2>&1 && [ -f /etc/mail/sendmail.cf ]; then
+    grep -q 'SmtpGreetingMessage' /etc/mail/sendmail.cf || RESULT_U62="취약(Sendmail 경고 메시지 미설정)"
+fi
+if pgrep -f postfix >/dev/null 2>&1 && [ -f /etc/postfix/main.cf ]; then
+    grep -q 'smtpd_banner' /etc/postfix/main.cf || RESULT_U62="취약(Postfix 경고 메시지 미설정)"
+fi
+if pgrep -f exim >/dev/null 2>&1; then
+    EXIM_CONF=""
+    [ -f /etc/exim/exim.conf ] && EXIM_CONF="/etc/exim/exim.conf"
+    [ -f /etc/exim4/exim4.conf ] && EXIM_CONF="/etc/exim4/exim4.conf"
+    if [ -n "$EXIM_CONF" ] && ! grep -q 'smtp_banner' "$EXIM_CONF"; then
+        RESULT_U62="취약(Exim 경고 메시지 미설정)"
+    fi
+fi
+
+if pgrep -f named >/dev/null 2>&1; then
+    if [ -z "$NAMED_FLAT" ] || ! echo "$NAMED_FLAT" | grep -q 'version'; then
+        RESULT_U62="취약(DNS version 경고 메시지 미설정)"
+    fi
+fi
+
+# ------------------------------------------------------------------------------
+# U-63 sudo 명령어 접근 관리
+# ------------------------------------------------------------------------------
+RESULT_U63="양호"
+if [ -f /etc/sudoers ]; then
+    OWNER_SUDO=$(stat -c "%U" /etc/sudoers 2>/dev/null)
+    PERM_SUDO=$(stat -c "%a" /etc/sudoers 2>/dev/null | awk '{print substr($0, length($0)-2)}')
+    if [ "$OWNER_SUDO" != "root" ] || [ "$PERM_SUDO" -gt 640 ]; then
+        RESULT_U63="취약(소유자: $OWNER_SUDO, 권한: $PERM_SUDO)"
+    fi
+else
+    RESULT_U63="취약(/etc/sudoers 파일 없음)"
+fi
+
+
+# ==============================================================================
+# 점검 결과 출력 종합 리포트
+# ==============================================================================
+echo ""
+echo "------------------------------------------------------------------------------"
+echo "                       서비스 관리 항목 점검 결과 요약                      "
+echo "------------------------------------------------------------------------------"
+
+for i in $(seq 34 63); do
+    VAR_NAME="RESULT_U$i"
+    VAL="${!VAR_NAME}"
+
+    [[ "$VAL" =~ "취약" ]] && TOTAL_VULN=$((TOTAL_VULN + 1))
+
+    printf "U-%02d 점검 결과 : %s\n" "$i" "$VAL"
+done
+
+echo "------------------------------------------------------------------------------"
+echo "점검 완료: 총 30개 항목 중 조치 필요 항목 ($TOTAL_VULN개)"
+echo "------------------------------------------------------------------------------"
+
+[ "$TOTAL_VULN" -eq 0 ] && exit 0 || exit 1

